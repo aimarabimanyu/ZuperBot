@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from datetime import datetime
 
 def main():
     # Set the bot intents
@@ -36,12 +37,21 @@ def main():
             if isinstance(message.channel.parent, discord.channel.ForumChannel):
                 if message.raw_role_mentions == [1211741113728110651]:
                     channel = client.get_channel(1211739766220132375)
-                    print()
                     msg_url = message.jump_url
+                    message_date = message.created_at
 
-                    await channel.send(f"<@&{1211741113728110651}> ada update baru di {msg_url}")
+                    embed = discord.Embed(title=f"{msg_url}",
+                                          description="Ini adalah contoh pesan yang akan muncul ketika ada update baru di channel",
+                                          color=discord.Color.yellow())
+                    print(message)
+                    print(type(message.created_at))
+                    print(message.created_at)
+
+                    embed.set_author(name=message.author.global_name)
+                    embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
+                    await channel.send(f"<@&{1211741113728110651}> ada update baru di {msg_url}", embed=embed)
         except:
-            print('Pesan tidak terdeteksi parent channel')
+            print('Pesan tidak terdeteksi parent forum channel')
 
     client.run('MTIwNDkyMDIwOTE2NTY1MjAwMA.GAqr2b.bsNJlUgxCdwG2P7i8vDO-Yx5kjYzhKKa3t2FGY')
 
