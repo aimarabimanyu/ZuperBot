@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from datetime import datetime
 
 def main():
     # Set the bot intents
@@ -40,14 +39,9 @@ def main():
                     msg_url = message.jump_url
                     message_date = message.created_at
 
-                    embed = discord.Embed(title=f"{msg_url}",
-                                          description="Ini adalah contoh pesan yang akan muncul ketika ada update baru di channel",
-                                          color=discord.Color.yellow())
-                    print(message)
-                    print(type(message.created_at))
-                    print(message.created_at)
-
-                    embed.set_author(name=message.author.global_name)
+                    embed = discord.Embed(description=f"{message.content}", color=discord.Color.yellow())
+                    embed.set_author(name=message.author.global_name, icon_url=message.author.avatar)
+                    embed.set_image(url=message.attachments[0].url)
                     embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
                     await channel.send(f"<@&{1211741113728110651}> ada update baru di {msg_url}", embed=embed)
         except:
