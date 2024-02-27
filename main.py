@@ -1,7 +1,12 @@
 import discord
 from discord.ext import commands
+import os
+from dotenv import load_dotenv
 
 def main():
+    # Load the environment variable
+    load_dotenv()
+
     # Set the bot intents
     intent = discord.Intents.all()
     intent.members = True
@@ -17,12 +22,12 @@ def main():
     # Display welcome message when a new member join the server
     @client.event
     async def on_member_join(member):
-        channel = client.get_channel(1211739560485064734)
+        channel = client.get_channel(int(os.getenv('WELCOME_CHANNEL_ID')))
         embed = discord.Embed()
         embed.set_image(url="https://i.imgur.com/Le2xPHN.png")
 
-        await channel.send(f"Selamat datang {member.mention}, jangan lupa untuk nyalakan notifikasi pada <#{str(1211739632773894194)}> untuk dapat update garapan baru dengan melakukan \n\n"
-                           f"> Klik kanan di <#{str(1211739632773894194)}> "
+        await channel.send(f"Selamat datang {member.mention}, jangan lupa untuk nyalakan notifikasi pada <#{os.getenv('GARAPAN_CHANNEL_ID')}> untuk dapat update garapan baru dengan melakukan \n\n"
+                           f"> Klik kanan di <#{os.getenv('GARAPAN_CHANNEL_ID')}> "
                            f"> Kik `Notification Setting` "
                            f"> Centang `New Posts Created` \n\n"
                            f"Contoh: ", embed=embed)
@@ -34,20 +39,22 @@ def main():
             return
         try:
             if isinstance(message.channel.parent, discord.channel.ForumChannel):
-                if message.raw_role_mentions == [1211741113728110651]:
-                    channel = client.get_channel(1211739766220132375)
+                if message.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))]:
+                    channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
                     msg_url = message.jump_url
                     message_date = message.created_at
 
                     embed = discord.Embed(description=f"{message.content}", color=discord.Color.yellow())
+
                     embed.set_author(name=message.author.global_name, icon_url=message.author.avatar)
-                    embed.set_image(url=message.attachments[0].url)
+                    if message.attachments:
+                        embed.set_image(url=message.attachments[0].url)
                     embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
-                    await channel.send(f"<@&{1211741113728110651}> ada update baru di {msg_url}", embed=embed)
+                    await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> ada update baru di {msg_url}", embed=embed)
         except:
             print('Pesan tidak terdeteksi parent forum channel')
 
-    client.run('MTIwNDkyMDIwOTE2NTY1MjAwMA.GAqr2b.bsNJlUgxCdwG2P7i8vDO-Yx5kjYzhKKa3t2FGY')
+    client.run(os.getenv('DISCORD_API_TOKEN'))
 
 if __name__ == '__main__':
     main()
