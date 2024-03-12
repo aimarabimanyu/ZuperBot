@@ -44,13 +44,15 @@ def main():
                     msg_url = message.jump_url
                     message_date = message.created_at
 
-                    embed = discord.Embed(description=f"{message.content}", color=discord.Color.yellow())
+                    print(message)
+
+                    embed = discord.Embed(title=f"{msg_url}", description=f"{message.content}", color=discord.Color.yellow())
 
                     embed.set_author(name=message.author.global_name, icon_url=message.author.avatar)
                     if message.attachments:
                         embed.set_image(url=message.attachments[0].url)
                     embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
-                    await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> ada update baru di {msg_url}", embed=embed)
+                    await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> ada update baru di {message.channel.name}", embed=embed)
         except:
             print('Pesan tidak terdeteksi parent forum channel')
 
