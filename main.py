@@ -37,14 +37,15 @@ def main():
     async def on_message(message):
         if message.author == client.user:
             return
+
+        print(message.raw_role_mentions)
+
         try:
             if isinstance(message.channel.parent, discord.channel.ForumChannel):
-                if message.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))]:
+                if message.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in message.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
                     channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
                     msg_url = message.jump_url
                     message_date = message.created_at
-
-                    print(message)
 
                     embed = discord.Embed(title=f"{msg_url}", description=f"{message.content}", color=discord.Color.yellow())
 
