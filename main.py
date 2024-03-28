@@ -62,6 +62,33 @@ def main():
         except:
             print('Pesan tidak terdeteksi parent forum channel')
 
+    @client.event
+    async def on_message_edit(before, after):
+        if before.author == client.user:
+            return
+
+        try:
+            if isinstance(before.channel.parent, discord.channel.ForumChannel):
+                if (after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))]
+                    or all(role in after.raw_role_mentions for role in
+                           [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))])):
+                    channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
+                    msg_url = after.jump_url
+                    message_date = after.created_at
+
+                    embed = discord.Embed(title=f"{msg_url}",
+                                          description=f"{after.content}",
+                                          color=discord.Color.yellow())
+
+                    embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
+                    if after.attachments:
+                        embed.set_image(url=after.attachments[0].url)
+                    embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
+                    await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
+                                       f"ada update baru di {after.channel.name}", embed=embed)
+        except:
+            print('Pesan tidak terdeteksi parent forum channel')
+
     client.run(os.getenv('DISCORD_API_TOKEN'))
 
 if __name__ == '__main__':
