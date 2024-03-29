@@ -34,7 +34,7 @@ def main():
                            f"> Centang `New Posts Created` \n\n"
                            f"Contoh: ", embed=embed)
 
-    # Display message when roles get mentioned
+    # Display message on #ping-post-garapan when roles get mentioned in #diskusi-garapan thread channel
     @client.event
     async def on_message(message):
         if message.author == client.user:
@@ -42,9 +42,7 @@ def main():
 
         try:
             if isinstance(message.channel.parent, discord.channel.ForumChannel):
-                if (message.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))]
-                    or all(role in message.raw_role_mentions for role in
-                           [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))])):
+                if message.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in message.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
                     channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
                     msg_url = message.jump_url
                     message_date = message.created_at
@@ -56,40 +54,41 @@ def main():
                     embed.set_author(name=message.author.global_name, icon_url=message.author.avatar)
                     if message.attachments:
                         embed.set_image(url=message.attachments[0].url)
-                    embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
+                    embed.set_footer(text=f'{message.id}')
                     await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
                                        f"ada update baru di {message.channel.name}", embed=embed)
         except:
             print('Pesan tidak terdeteksi parent forum channel')
 
-    @client.event
-    async def on_message_edit(before, after):
-        if before.author == client.user:
-            return
-
-        try:
-            if isinstance(before.channel.parent, discord.channel.ForumChannel):
-                if (after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))]
-                    or all(role in after.raw_role_mentions for role in
-                           [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))])):
-                    channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
-                    msg_url = after.jump_url
-                    message_date = after.created_at
-
-                    embed = discord.Embed(title=f"{msg_url}",
-                                          description=f"{after.content}",
-                                          color=discord.Color.yellow())
-
-                    embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
-                    if after.attachments:
-                        embed.set_image(url=after.attachments[0].url)
-                    embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
-                    await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
-                                       f"ada update baru di {after.channel.name}", embed=embed)
-        except:
-            print('Pesan tidak terdeteksi parent forum channel')
+    # Display message when roles get mentioned after message edited
+    # @client.event
+    # async def on_message_edit(before, after):
+    #     if before.author == client.user:
+    #         return
+    #
+    #     try:
+    #         if isinstance(after.channel.parent, discord.channel.ForumChannel):
+    #             if (before.edited_at is None and after.edited_at is not None):
+    #                 if (after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))])):
+    #                     channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
+    #                     msg_url = after.jump_url
+    #                     message_date = after.created_at
+    #
+    #                     embed = discord.Embed(title=f"{msg_url}",
+    #                                           description=f"{after.content}",
+    #                                           color=discord.Color.yellow())
+    #
+    #                     embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
+    #                     if after.attachments:
+    #                         embed.set_image(url=after.attachments[0].url)
+    #                     embed.set_footer(text=f'Message sent at {message_date.strftime("%d %b %Y %H:%M")}')
+    #                     await channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
+    #                                        f"ada update baru di {after.channel.name}", embed=embed)
+    #     except:
+    #         print('Pesan tidak terdeteksi parent forum channel')
 
     client.run(os.getenv('DISCORD_API_TOKEN'))
+
 
 if __name__ == '__main__':
     main()
