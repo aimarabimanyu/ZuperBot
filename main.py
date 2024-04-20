@@ -75,13 +75,15 @@ def main():
                 feed_message_id_list = []
 
                 # Take the message id from the footer of the message
-                async for message in ping_garapan_channel.history(limit=500):
+                async for message in ping_garapan_channel.history(limit=100):
                     if message.embeds:
                         feed_message_footer_id_list.append(int(message.embeds[0].footer.text))
                         feed_message_id_list.append(message.id)
 
+                print(before.id in feed_message_footer_id_list)
+
                 # Send new message if the message is edited and feed message is sent more than 3 days ago
-                if before.id in feed_message_footer_id_list and (datetime.now().timestamp() - message.created_at.timestamp()) > timedelta(days=3).total_seconds():
+                if before.id in feed_message_footer_id_list and (datetime.now().timestamp() - before.created_at.timestamp()) > timedelta(days=3).total_seconds():
                     if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
                         embed = discord.Embed(title=f"{msg_url}",
                                               description=f"{after.content}",
@@ -97,8 +99,10 @@ def main():
                         await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
                                                         f"ada update baru di {after.channel.name}", embed=embed)
 
+                        Print()
+
                 # Edit embed feed message if the message is edited and feed message is sent less than 3 days ago
-                elif before.id in feed_message_footer_id_list and (datetime.now().timestamp() - message.created_at.timestamp()) < timedelta(days=3).total_seconds():
+                elif before.id in feed_message_footer_id_list and (datetime.now().timestamp() - before.created_at.timestamp()) < timedelta(days=3).total_seconds():
                     if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
                         embed = discord.Embed(title=f"{msg_url}",
                                               description=f"{after.content}",
@@ -143,7 +147,7 @@ def main():
                 feed_message_id_list = []
 
                 # Take the message id from the footer of the message
-                async for feed_message in ping_garapan_channel.history(limit=500):
+                async for feed_message in ping_garapan_channel.history(limit=100):
                     if feed_message.embeds:
                         feed_message_footer_id_list.append(int(feed_message.embeds[0].footer.text))
                         feed_message_id_list.append(feed_message.id)
