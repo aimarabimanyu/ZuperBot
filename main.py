@@ -1,4 +1,5 @@
 import discord
+from datetime import datetime, timedelta
 from discord.ext import commands
 import os
 from dotenv import load_dotenv
@@ -57,7 +58,7 @@ def main():
                     await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
                                                     f"ada update baru di {message.channel.name}", embed=embed)
         except:
-            print('Pesan tidak terdeteksi parent forum channel')
+            print('Pesan tidak terdeteksi parent forum channel (New Message)')
 
     # Display feed message on #ping-post-garapan when message at #diskusi-garapan thread channel get edited with roles mentioned
     @client.event
@@ -69,39 +70,90 @@ def main():
         msg_url = after.jump_url
 
         try:
-            if isinstance(after.channel.parent, discord.channel.ForumChannel):
+            if isinstance(after.channel.parent, discord.channel.ForumChannel) and before.pinned == after.pinned:
+                feed_message_footer_id_list = []
+                feed_message_id_list = []
+
+                # Take the message id from the footer of the message
                 async for message in ping_garapan_channel.history(limit=500):
-                    if message.embeds[0].footer.text != str(before.id):
-                        if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
-                            embed = discord.Embed(title=f"{msg_url}",
-                                                  description=f"{after.content}",
-                                                  color=discord.Color.yellow())
-                            embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
-                            if after.attachments:
-                                embed.set_image(url=after.attachments[0].url)
-                            embed.set_footer(text=f'{after.id}')
+                    if message.embeds:
+                        feed_message_footer_id_list.append(int(message.embeds[0].footer.text))
+                        feed_message_id_list.append(message.id)
 
-                            await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
-                                                            f"ada update baru di {after.channel.name}", embed=embed)
+                # Send new message if the message is edited and feed message is sent more than 3 days ago
+                if before.id in feed_message_footer_id_list and (datetime.now().timestamp() - message.created_at.timestamp()) > timedelta(days=3).total_seconds():
+                    if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
+                        embed = discord.Embed(title=f"{msg_url}",
+                                              description=f"{after.content}",
+                                              color=discord.Color.yellow())
 
-                            break
-                    elif message.embeds[0].footer.text == str(before.id):
-                        if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
-                            embed = discord.Embed(title=f"{msg_url}",
-                                                  description=f"{after.content}",
-                                                  color=discord.Color.yellow())
-                            embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
-                            if after.attachments:
-                                embed.set_image(url=after.attachments[0].url)
-                            embed.set_footer(text=f'{after.id}')
+                        embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
+                        if after.attachments:
+                            embed.set_image(url=after.attachments[0].url)
+                        embed.set_footer(text=f'{after.id}')
 
-                            await message.delete()
-                            await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
-                                                            f"ada update baru di {after.channel.name}", embed=embed)
+                        feed_message = await ping_garapan_channel.fetch_message(feed_message_id_list[feed_message_footer_id_list.index(before.id)])
+                        await feed_message.delete()
+                        await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
+                                                        f"ada update baru di {after.channel.name}", embed=embed)
 
-                            break
+                # Edit embed feed message if the message is edited and feed message is sent less than 3 days ago
+                elif before.id in feed_message_footer_id_list and (datetime.now().timestamp() - message.created_at.timestamp()) < timedelta(days=3).total_seconds():
+                    if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
+                        embed = discord.Embed(title=f"{msg_url}",
+                                              description=f"{after.content}",
+                                              color=discord.Color.yellow())
+
+                        embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
+                        if after.attachments:
+                            embed.set_image(url=after.attachments[0].url)
+                        embed.set_footer(text=f'{after.id}')
+
+                        feed_message = await ping_garapan_channel.fetch_message(feed_message_id_list[feed_message_footer_id_list.index(before.id)])
+                        await feed_message.edit(embed=embed)
+
+                # Send new message if the message is edited and feed message is not sent yet
+                elif before.id not in feed_message_footer_id_list:
+                    if after.raw_role_mentions == [int(os.getenv('UPDATE_GARAPAN_ROLE_ID'))] or all(role in after.raw_role_mentions for role in [int(os.getenv('UPDATE_GARAPAN_ROLE_ID')), int(os.getenv('NAKAMA_ROLE_ID'))]):
+                        embed = discord.Embed(title=f"{msg_url}",
+                                              description=f"{after.content}",
+                                              color=discord.Color.yellow())
+                        embed.set_author(name=after.author.global_name, icon_url=after.author.avatar)
+                        if after.attachments:
+                            embed.set_image(url=after.attachments[0].url)
+                        embed.set_footer(text=f'{after.id}')
+
+                        await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
+                                                        f"ada update baru di {after.channel.name}", embed=embed)
+
         except:
-            print('Pesan tidak terdeteksi parent forum channel')
+            print('Pesan tidak terdeteksi parent forum channel (Edited)')
+
+    # Delete feed message on #ping-post-garapan when message at #diskusi-garapan thread channel get deleted
+    @client.event
+    async def on_message_delete(message):
+        if message.author == client.user:
+            return
+
+        ping_garapan_channel = client.get_channel(int(os.getenv('PING_GARAPAN_CHANNEL_ID')))
+
+        try:
+            if isinstance(message.channel.parent, discord.channel.ForumChannel):
+                feed_message_footer_id_list = []
+                feed_message_id_list = []
+
+                # Take the message id from the footer of the message
+                async for feed_message in ping_garapan_channel.history(limit=500):
+                    if feed_message.embeds:
+                        feed_message_footer_id_list.append(int(feed_message.embeds[0].footer.text))
+                        feed_message_id_list.append(feed_message.id)
+
+                if message.id in feed_message_footer_id_list:
+                    feed_message = await ping_garapan_channel.fetch_message(feed_message_id_list[feed_message_footer_id_list.index(message.id)])
+                    await feed_message.delete()
+
+        except:
+            print('Pesan tidak terdeteksi parent forum channel (Delete)')
 
     client.run(os.getenv('DISCORD_API_TOKEN'))
 
