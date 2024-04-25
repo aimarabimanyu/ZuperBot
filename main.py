@@ -1,6 +1,6 @@
 import discord
-from datetime import datetime, timedelta
 from discord.ext import commands
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
@@ -75,7 +75,7 @@ def main():
                 feed_message_id_list = []
 
                 # Take the message id from the footer of the message
-                async for message in ping_garapan_channel.history(limit=100):
+                async for message in ping_garapan_channel.history(limit=200):
                     if message.embeds:
                         feed_message_footer_id_list.append(int(message.embeds[0].footer.text))
                         feed_message_id_list.append(message.id)
@@ -96,8 +96,6 @@ def main():
                         await feed_message.delete()
                         await ping_garapan_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}> "
                                                         f"ada update baru di {after.channel.name}", embed=embed)
-
-                        Print()
 
                 # Edit embed feed message if the message is edited and feed message is sent less than 3 days ago
                 elif before.id in feed_message_footer_id_list and (datetime.now().timestamp() - before.created_at.timestamp()) < timedelta(days=3).total_seconds():
@@ -144,8 +142,7 @@ def main():
                 feed_message_footer_id_list = []
                 feed_message_id_list = []
 
-                # Take the message id from the footer of the message
-                async for feed_message in ping_garapan_channel.history(limit=100):
+                async for feed_message in ping_garapan_channel.history(limit=200):
                     if feed_message.embeds:
                         feed_message_footer_id_list.append(int(feed_message.embeds[0].footer.text))
                         feed_message_id_list.append(feed_message.id)
@@ -156,6 +153,49 @@ def main():
 
         except:
             print('Pesan tidak terdeteksi parent forum channel (Delete)')
+
+    # Send feed message on #warmindo-24-jam when there is new thread created on #diskusi-garapan
+    @client.event
+    async def on_thread_create(thread):
+        if thread.owner == client.user:
+            return
+
+        if thread.parent_id == int(os.getenv('GARAPAN_CHANNEL_ID')):
+            warmindo_channel = client.get_channel(int(os.getenv('WARMINDO_CHANNEL_ID')))
+            thread_url = thread.jump_url
+            starter_message = await thread.fetch_message(thread.id)
+
+            embed = discord.Embed(title=f"{thread_url}",
+                                  description=f"{starter_message.content}",
+                                  color=discord.Color.green())
+            embed.set_author(name=thread.owner.name, icon_url=thread.owner.avatar)
+            if thread.starter_message.attachments:
+                embed.set_image(url=starter_message.attachments[0].url)
+            embed.set_footer(text=f'{thread.id}')
+
+            await warmindo_channel.send(f"<@&{int(os.getenv('NAKAMA_ROLE_ID'))}>\n"
+                                        f"garapan baru {thread.name} udah ada di channel diskusi garapan, buruan gih tinggalin jejak", embed=embed)
+
+    # Delete feed message on #warmindo-24-jam when thread on #diskusi-garapan get deleted
+    @client.event
+    async def on_thread_delete(thread):
+        if thread.owner == client.user:
+            return
+
+        if thread.parent_id == int(os.getenv('GARAPAN_CHANNEL_ID')):
+            warmindo_channel = client.get_channel(int(os.getenv('WARMINDO_CHANNEL_ID')))
+            feed_message_footer_id_list = []
+            feed_message_id_list = []
+
+            async for feed_message in warmindo_channel.history(limit=200):
+                if feed_message.embeds:
+                    feed_message_footer_id_list.append(int(feed_message.embeds[0].footer.text))
+                    feed_message_id_list.append(feed_message.id)
+
+            if thread.id in feed_message_footer_id_list:
+                feed_message = await warmindo_channel.fetch_message(feed_message_id_list[feed_message_footer_id_list.index(thread.id)])
+                await feed_message.delete()
+
 
     client.run(os.getenv('DISCORD_API_TOKEN'))
 
