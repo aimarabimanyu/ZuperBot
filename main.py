@@ -188,7 +188,7 @@ def main():
             feed_message_id_list = []
 
             async for feed_message in warmindo_channel.history(limit=200):
-                if feed_message.embeds and feed_message.author.name == 'ZuperBot Testing':
+                if feed_message.embeds and feed_message.author.name == int(os.getenv('ZUPERBOT_USERNAME')):
                     if feed_message.embeds[0].footer.text is not None:
                         feed_message_footer_id_list.append(int(feed_message.embeds[0].footer.text))
                     feed_message_id_list.append(feed_message.id)
