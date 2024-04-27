@@ -1,27 +1,25 @@
 import discord
 from discord.ext import commands
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class Greetings(commands.Cog, name='Greetings'):
-    def __init__(self, client):
+    def __init__(self, client) -> None:
         self.client = client
 
+    '''
+    Send a welcome message to the welcome channel when a new member joins the server
+    '''
     @commands.Cog.listener()
-    async def on_member_join(self,member):
-        welcome_channel = self.client.get_channel(int(os.getenv('WELCOME_CHANNEL_ID')))
-        embed = discord.Embed()
-        embed.set_image(url="https://i.imgur.com/Le2xPHN.png")
+    async def on_member_join(self, member) -> None:
+        welcome_channel = self.client.get_channel(int(self.client.config['Greetings']['welcome_channel_id']))
+        welcome_message = f"{self.client.config['Greetings']['welcome_message']}"
+        embed = discord.Embed().set_image(url=self.client.config['Greetings']['welcome_image_url'])
 
-        await welcome_channel.send(f"Selamat datang {member.mention}, jangan lupa untuk nyalakan notifikasi pada "
-                                   f"<#{os.getenv('GARAPAN_CHANNEL_ID')}> untuk dapat update garapan baru dengan melakukan \n\n"
-                                   f"> Klik kanan di <#{os.getenv('GARAPAN_CHANNEL_ID')}> "
-                                   f"> Kik `Notification Setting` "
-                                   f"> Centang `New Posts Created` \n\n"
-                                   f"Contoh: ", embed=embed)
+        await welcome_channel.send(
+            welcome_message.format(
+                member=getattr(member, self.client.config['Greetings']['member_function']),
+                rules_channel_id=int(self.client.config['Greetings']['rules_channel_id'])),
+            embed=embed)
 
 
 async def setup(client) -> None:
