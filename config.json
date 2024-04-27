@@ -1,7 +1,7 @@
 {
   "bot_name": "ZuperBot Testing",
   "prefix": "!",
-  "bot_activity": "Menghindari DJP",
+  "bot_activity": ["Trading di Binance", "Menghindari DJP", "Garap Airdrop"],
   "Greetings": {
     "welcome_message": "Selamat datang {member}, jangan lupa untuk nyalakan notifikasi pada <#{rules_channel_id}> untuk dapat update garapan baru dengan melakukan \n > Klik kanan di <#{rules_channel_id}> > Kik `Notification Setting` > Centang `New Posts Created` \n\nContoh: ",
     "welcome_image_url": "https://i.imgur.com/Le2xPHN.png",
