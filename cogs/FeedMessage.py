@@ -197,7 +197,7 @@ class FeedMessage(commands.Cog, name='Feed Message'):
             feed_message_id_list = []
 
             async for feed_message in warmindo_channel.history(limit=200):
-                if feed_message.embeds and self.client.config['bot_name']:
+                if feed_message.embeds and feed_message.author.name == self.client.config['bot_name']:
                     if feed_message.embeds[0].footer.text is not None:
                         feed_message_footer_id_list.append(int(feed_message.embeds[0].footer.text))
                     feed_message_id_list.append(feed_message.id)
