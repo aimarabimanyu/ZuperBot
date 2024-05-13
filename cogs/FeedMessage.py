@@ -103,7 +103,7 @@ class FeedMessage(commands.Cog, name='Feed Message'):
 
                     await feed_message.delete()
                     await ping_garapan_channel.send(
-                        feed_message_update.format(mention=self.mention_all_role_id, message=message.channel.name),
+                        feed_message_update.format(mention=self.mention_all_role_id, message=after.channel.name),
                         embed=embed
                     )
 
@@ -164,7 +164,7 @@ class FeedMessage(commands.Cog, name='Feed Message'):
                     embed.set_footer(text=f'{after.id}')
 
                     await ping_garapan_channel.send(
-                        feed_message_update.format(mention=self.mention_all_role_id, message=message.channel.name),
+                        feed_message_update.format(mention=self.mention_all_role_id, message=after.channel.name),
                         embed=embed
                     )
 
