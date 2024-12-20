@@ -2,20 +2,29 @@
   "bot_name": "ZuperBot Testing",
   "prefix": "!",
   "bot_activity": ["Trading di Binance", "Menghindari DJP", "Garap Airdrop"],
-  "Greetings": {
+  "bot_feature": {
+    "forum_feed_message": true,
+    "forum_new_thread_message": true,
+    "welcome_message": true
+  },
+  "forum_new_thread_message": {
+    "new_thread_message": "<@&{mention}> garapan baru {thread} sudah ada di channel diskusi garapan, jangan lupa tinggalin jejak ya",
+    "target_channel_id": 1231267273113735288,
+    "source_forum_channel_id": 1231273076130578556,
+    "mention_role_id": 1231267272467812480
+  },
+  "forum_feed_message_settings": {
+    "feed_message": "<@&{mention}> ada update baru dari {message}",
+    "target_channel_id": 1231267273344286750,
+    "source_forum_channel_id": 1231273076130578556,
+    "mention_role_id": 1231267272467812480,
+    "trigger_role_id": 1231267272333459511
+  },
+  "welcome_message_settings": {
     "welcome_message": "Selamat datang {member}, jangan lupa untuk nyalakan notifikasi pada <#{rules_channel_id}> untuk dapat update garapan baru dengan melakukan \n > Klik kanan di <#{rules_channel_id}> > Kik `Notification Setting` > Centang `New Posts Created` \n\nContoh: ",
     "welcome_image_url": "https://i.imgur.com/Le2xPHN.png",
     "member_function": "mention",
     "welcome_channel_id": 1231267273113735281,
     "rules_channel_id": 1231273076130578556
-  },
-  "FeedMessage": {
-    "feed_message_update": "<@&{mention}> ada update baru dari {message}",
-    "feed_message_new": "<@&{mention}> garapan baru {thread} sudah ada di channel diskusi garapan, buruan gih tinggalin jejak",
-    "feed_message_update_channel_id": 1231267273344286750,
-    "feed_message_new_channel_id": 1231267273600401505,
-    "source_channel_id": 1231273076130578556,
-    "mention_all_role_id": 1231267272467812480,
-    "mention_feed_role_id": 1231267272333459511
   }
 }

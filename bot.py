@@ -21,6 +21,7 @@ else:
 intent = discord.Intents.all()
 intent.members = True
 
+
 # Set the loggers
 class LoggingFormatter(logging.Formatter):
     # Colors
@@ -43,17 +44,20 @@ class LoggingFormatter(logging.Formatter):
         logging.CRITICAL: red + bold,
     }
 
-    def format(self, record):
+    def format(self, record) -> str:
         log_color = self.COLORS[record.levelno]
-        format = "[(black){asctime}(reset)] [(levelcolor){levelname:<8}(reset)] (green){name}(reset) {message}"
+        format = "(black){asctime}(reset) (levelcolor){levelname:<8}(reset) (green){name}(reset) {message}"
         format = format.replace("(black)", self.black + self.bold)
         format = format.replace("(reset)", self.reset)
         format = format.replace("(levelcolor)", log_color)
         format = format.replace("(green)", self.green + self.bold)
         formatter = logging.Formatter(format, "%Y-%m-%d %H:%M:%S", style="{")
+
         return formatter.format(record)
 
-logger = logging.getLogger("discord_bot")
+
+# Create a logger
+logger = logging.getLogger(config["bot_name"])
 logger.setLevel(logging.INFO)
 
 # Create a console handler
@@ -71,23 +75,24 @@ file_handler.setFormatter(file_handler_formatter)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
+
 class DiscordBot(commands.Bot):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-
         self.config = config
         self.logger = logger
 
     async def load_cogs(self) -> None:
         for extension in os.listdir(f"{os.path.realpath(os.path.dirname(__file__))}/cogs"):
             if extension.endswith('.py'):
-                extension = extension[:-3]
-                try:
-                    await self.load_extension(f"cogs.{extension}")
-                    self.logger.info(f"Loaded extension '{extension}'")
-                except Exception as e:
-                    exception = f"{type(e).__name__}: {e}"
-                    self.logger.error(f"Failed to load extension {extension}, {exception}")
+                if self.config["bot_feature"][extension[:-3]]:
+                    extension = extension[:-3]
+                    try:
+                        await self.load_extension(f"cogs.{extension}")
+                        self.logger.info(f"Loaded extension '{extension}'")
+                    except Exception as e:
+                        exception = f"{type(e).__name__}: {e}"
+                        self.logger.error(f"Failed to load extension {extension}, {exception}")
 
     @tasks.loop(minutes=30)
     async def update_status(self) -> None:
