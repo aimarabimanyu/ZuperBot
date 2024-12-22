@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-
+import time
 
 class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     def __init__(self, client) -> None:
@@ -13,6 +13,7 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_thread_create(self, thread) -> None:
+        time.sleep(3)
         try:
             if thread.parent_id == self.config['forum_new_thread_message']['source_forum_channel_id']:
                 target_channel = self.client.get_channel(self.config['forum_new_thread_message']['target_channel_id'])
@@ -54,6 +55,7 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_thread_delete(self, thread) -> None:
+        time.sleep(3)
         try:
             target_channel = self.client.get_channel(self.config['forum_new_thread_message']['target_channel_id'])
             new_thread_message_footer_id_list = []
