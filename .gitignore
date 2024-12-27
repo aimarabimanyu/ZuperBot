@@ -1,3 +1,5 @@
 .venv
 .gitignore
 .env
+data/discord_bot.log
+data/forum_thread.db

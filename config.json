@@ -5,7 +5,8 @@
   "bot_feature": {
     "forum_feed_message": true,
     "forum_new_thread_message": true,
-    "welcome_message": true
+    "welcome_message": true,
+    "database": true
   },
   "forum_new_thread_message": {
     "new_thread_message": "<@&{mention}> garapan baru {thread} sudah ada di channel diskusi garapan, jangan lupa tinggalin jejak ya",
