@@ -14,6 +14,18 @@ class Database(commands.Cog, name='Database'):
 
             self.cursor.execute(
                 """
+                CREATE TABLE IF NOT EXISTS forum_new_thread_message (
+                    message_id INTEGER PRIMARY KEY,
+                    channel_id INTEGER,
+                    created_at TEXT,
+                    edited_at TEXT
+                )
+                """
+            )
+            self.database.commit()
+
+            self.cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS forum_thread (
                     thread_id INTEGER PRIMARY KEY,
                     thread_name TEXT,
@@ -26,22 +38,12 @@ class Database(commands.Cog, name='Database'):
                     member_count INTEGER,
                     message_count INTEGER,
                     locked BOOLEAN DEFAULT 0,
-                    archived BOOLEAN DEFAULT 0
+                    archived BOOLEAN DEFAULT 0,
+                    message_id INTEGER,
+                    FOREIGN KEY (message_id) REFERENCES forum_new_thread_message (message_id)
                 )
                 """
             )
-
-            self.cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS forum_new_thread_message (
-                    message_id INTEGER PRIMARY KEY,
-                    channel_id INTEGER,
-                    created_at TEXT,
-                    edited_at TEXT
-                )
-                """
-            )
-
             self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error: {e}")
@@ -67,13 +69,13 @@ class Database(commands.Cog, name='Database'):
                         """
                         INSERT INTO forum_thread (
                             thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
-                            created_at, jump_url, member_count, message_count, locked, archived
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            created_at, jump_url, member_count, message_count, locked, archived, message_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             thread.id, thread.name, thread.parent_id, thread.parent.name, thread.owner_id,
                             thread.owner.name, thread.created_at, thread.jump_url, thread.member_count,
-                            thread.message_count, thread.locked, thread.archived
+                            thread.message_count, thread.locked, thread.archived, None
                         )
                     )
 
@@ -85,13 +87,13 @@ class Database(commands.Cog, name='Database'):
                         """
                         INSERT INTO forum_thread (
                             thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
-                            created_at, jump_url, member_count, message_count, locked, archived
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            created_at, jump_url, member_count, message_count, locked, archived, message_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             thread.id, thread.name, thread.parent_id, thread.parent.name, thread.owner_id,
                             thread.owner.name, thread.created_at, thread.jump_url, thread.member_count,
-                            thread.message_count, thread.locked, thread.archived
+                            thread.message_count, thread.locked, thread.archived, None
                         )
                     )
 
@@ -116,10 +118,11 @@ class Database(commands.Cog, name='Database'):
 
         await self.update_database.start()
 
-    @tasks.loop(minutes=10)
+    @tasks.loop(seconds=600)
     async def update_database(self) -> None:
         await self._update_forum_thread()
         await self._update_forum_new_thread_message()
+        self.logger.info("Database updated with newest form existing threads and messages")
 
     async def _update_forum_thread(self) -> None:
         try:
@@ -127,7 +130,7 @@ class Database(commands.Cog, name='Database'):
                 self.config['forum_new_thread_message']['source_forum_channel_id']
             )
 
-            # Iterate over each message in the target channel and update it into the database
+            # Iterate over each ACTIVE thread in the source forum channel and update it into the database
             for thread in source_forum_channel.threads:
                 self.cursor.execute("SELECT 1 FROM forum_thread WHERE thread_id = ?", (thread.id,))
                 if self.cursor.fetchone():
@@ -145,9 +148,7 @@ class Database(commands.Cog, name='Database'):
                             thread.locked, thread.archived, thread.id
                         )
                     )
-
-            self.database.commit()
-            self.logger.info("Database updated with newest form existing threads from the source forum channel")
+                    self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_thread: {e}")
         except Exception as e:
@@ -157,7 +158,7 @@ class Database(commands.Cog, name='Database'):
         try:
             target_channel = self.client.get_channel(self.config['forum_new_thread_message']['target_channel_id'])
 
-            # Iterate over each ACTIVE thread in the source forum channel and update it into the database
+            # Iterate over each message in the target channel and update it into the database
             async for message in target_channel.history(limit=None):
                 self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE message_id = ?", (message.id,))
                 if self.cursor.fetchone():
@@ -169,9 +170,7 @@ class Database(commands.Cog, name='Database'):
                         """,
                         (message.channel.id, message.created_at, message.edited_at, message.id)
                     )
-
-            self.database.commit()
-            self.logger.info("Database updated with newest form existing messages from the target channel")
+                    self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_new_thread_message: {e}")
         except Exception as e:
