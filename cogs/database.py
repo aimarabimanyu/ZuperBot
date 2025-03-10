@@ -2,28 +2,31 @@ from discord.ext import commands, tasks
 import sqlite3
 
 
+# Create a new class called Database
 class Database(commands.Cog, name='Database'):
     def __init__(self, client) -> None:
         self.client = client
         self.config = self.client.config
         self.logger = self.client.logger
 
+        # Initialize the database
         try:
-            self.database = sqlite3.connect('data/forum_thread.db')
+            self.database = sqlite3.connect('data/data.db')
             self.cursor = self.database.cursor()
 
+            # Create the forum_new_thread_message table
             self.cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS forum_new_thread_message (
-                    message_id INTEGER PRIMARY KEY,
+                    forum_new_thread_message_id INTEGER PRIMARY KEY,
                     channel_id INTEGER,
                     created_at TEXT,
                     edited_at TEXT
                 )
                 """
             )
-            self.database.commit()
 
+            # Create the forum_thread table
             self.cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS forum_thread (
@@ -39,11 +42,12 @@ class Database(commands.Cog, name='Database'):
                     message_count INTEGER,
                     locked BOOLEAN DEFAULT 0,
                     archived BOOLEAN DEFAULT 0,
-                    message_id INTEGER,
-                    FOREIGN KEY (message_id) REFERENCES forum_new_thread_message (message_id)
+                    forum_new_thread_message_id INTEGER,
+                    FOREIGN KEY (forum_new_thread_message_id) REFERENCES forum_new_thread_message (forum_new_thread_message_id)
                 )
                 """
             )
+
             self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error: {e}")
@@ -51,17 +55,17 @@ class Database(commands.Cog, name='Database'):
             self.logger.error(f"Exception in __init__: {e}")
 
     """
-    Initialize the existing threads and messages in to the database
+    Initialize the existing threads and messages into the database
     """
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         try:
             source_forum_channel = self.client.get_channel(
-                self.config['forum_new_thread_message']['source_forum_channel_id']
+                self.config['forum_new_thread_message_settings']['source_forum_channel_id']
             )
-            target_channel = self.client.get_channel(self.config['forum_new_thread_message']['target_channel_id'])
+            target_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['target_channel_id'])
 
-            # Iterate over each ACTIVE thread in the source forum channel and insert it into the database
+            # Iterate over each ACTIVE thread in the source forum channel and insert it into database
             for thread in source_forum_channel.threads:
                 self.cursor.execute("SELECT 1 FROM forum_thread WHERE thread_id = ?", (thread.id,))
                 if not self.cursor.fetchone():
@@ -69,7 +73,7 @@ class Database(commands.Cog, name='Database'):
                         """
                         INSERT INTO forum_thread (
                             thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
-                            created_at, jump_url, member_count, message_count, locked, archived, message_id
+                            created_at, jump_url, member_count, message_count, locked, archived, forum_new_thread_message_id
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
@@ -79,7 +83,7 @@ class Database(commands.Cog, name='Database'):
                         )
                     )
 
-            # Iterate over each ARCHIVED thread in the source forum channel and insert it into the database
+            # Iterate over each ARCHIVED thread in the source forum channel and insert it into database
             async for thread in source_forum_channel.archived_threads(limit=None):
                 self.cursor.execute("SELECT 1 FROM forum_thread WHERE thread_id = ?", (thread.id,))
                 if not self.cursor.fetchone():
@@ -87,7 +91,7 @@ class Database(commands.Cog, name='Database'):
                         """
                         INSERT INTO forum_thread (
                             thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
-                            created_at, jump_url, member_count, message_count, locked, archived, message_id
+                            created_at, jump_url, member_count, message_count, locked, archived, forum_new_thread_message_id
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
@@ -97,13 +101,13 @@ class Database(commands.Cog, name='Database'):
                         )
                     )
 
-            # Iterate over each message in the target channel and insert it into the database
+            # Iterate over each message in the target channel and insert it into database
             async for message in target_channel.history(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE message_id = ?", (message.id,))
+                self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?", (message.id,))
                 if not self.cursor.fetchone():
                     self.cursor.execute(
                         """
-                        INSERT INTO forum_new_thread_message (message_id, channel_id, created_at, edited_at
+                        INSERT INTO forum_new_thread_message (forum_new_thread_message_id, channel_id, created_at, edited_at
                         ) VALUES (?, ?, ?, ?)
                         """,
                         (message.id, message.channel.id, message.created_at, message.edited_at)
@@ -118,7 +122,7 @@ class Database(commands.Cog, name='Database'):
 
         await self.update_database.start()
 
-    @tasks.loop(seconds=600)
+    @tasks.loop(seconds=300)
     async def update_database(self) -> None:
         await self._update_forum_thread()
         await self._update_forum_new_thread_message()
@@ -127,7 +131,7 @@ class Database(commands.Cog, name='Database'):
     async def _update_forum_thread(self) -> None:
         try:
             source_forum_channel = self.client.get_channel(
-                self.config['forum_new_thread_message']['source_forum_channel_id']
+                self.config['forum_new_thread_message_settings']['source_forum_channel_id']
             )
 
             # Iterate over each ACTIVE thread in the source forum channel and update it into the database
@@ -156,17 +160,17 @@ class Database(commands.Cog, name='Database'):
 
     async def _update_forum_new_thread_message(self) -> None:
         try:
-            target_channel = self.client.get_channel(self.config['forum_new_thread_message']['target_channel_id'])
+            target_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['target_channel_id'])
 
             # Iterate over each message in the target channel and update it into the database
             async for message in target_channel.history(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE message_id = ?", (message.id,))
+                self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?", (message.id,))
                 if self.cursor.fetchone():
                     self.cursor.execute(
                         """
                         UPDATE forum_new_thread_message SET 
                             channel_id = ?, created_at = ?, edited_at = ?
-                        WHERE message_id = ?
+                        WHERE forum_new_thread_message_id = ?
                         """,
                         (message.channel.id, message.created_at, message.edited_at, message.id)
                     )

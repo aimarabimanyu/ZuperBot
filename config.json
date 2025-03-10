@@ -8,7 +8,7 @@
     "welcome_message": true,
     "database": true
   },
-  "forum_new_thread_message": {
+  "forum_new_thread_message_settings": {
     "new_thread_message": "<@&{mention}> garapan baru {thread} sudah ada di channel diskusi garapan, jangan lupa tinggalin jejak ya",
     "target_channel_id": 1231267273113735288,
     "source_forum_channel_id": 1231273076130578556,
