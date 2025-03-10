@@ -22,7 +22,7 @@ intent = discord.Intents.all()
 intent.members = True
 
 
-# Set the loggers
+# Set the loggers format and colors for discord bot
 class LoggingFormatter(logging.Formatter):
     # Colors
     black = "\x1b[30m"
@@ -56,15 +56,15 @@ class LoggingFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-# Create a logger
+# Initialize the logger and set the level
 logger = logging.getLogger(config["bot_name"])
 logger.setLevel(logging.INFO)
 
-# Create a console handler
+# Set log console handler and formatter
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(LoggingFormatter())
 
-# Create a file handler
+# Create a log file handler and set the formatter
 file_handler = logging.FileHandler("data/discord_bot.log", encoding="utf-8", mode="w")
 file_handler_formatter = logging.Formatter(
     "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
@@ -76,6 +76,7 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
 
+# Initialize the bot
 class DiscordBot(commands.Bot):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
