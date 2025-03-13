@@ -218,9 +218,9 @@ class Database(commands.Cog, name='Database'):
         await self.update_database.start()
 
     """
-    Do a database update every 5 minutes
+    Do a database update every 15 minutes
     """
-    @tasks.loop(seconds=300)
+    @tasks.loop(seconds=20)
     async def update_database(self) -> None:
         await self._update_forum_thread()
         await self._update_forum_new_thread_message()
@@ -254,6 +254,14 @@ class Database(commands.Cog, name='Database'):
                         )
                     )
                     self.database.commit()
+
+            # Iterate over thread_id in the forum_thread table and check if the thread still exists as ACTIVE THREAD in the source forum channel
+            self.cursor.execute("SELECT thread_id FROM forum_thread")
+            for thread_id in self.cursor.fetchall():
+                if thread_id[0] not in [thread.id for thread in update_forum_thread_source_forum_channel.threads] and thread_id[0] not in [thread.id async for thread in update_forum_thread_source_forum_channel.archived_threads()]:
+                    print(thread_id[0])
+                    self.cursor.execute("DELETE FROM forum_thread WHERE thread_id = ?", (thread_id[0],))
+                    self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_thread: {e}")
         except Exception as e:
@@ -278,6 +286,13 @@ class Database(commands.Cog, name='Database'):
                         """,
                         (message.channel.id, message.created_at, message.edited_at, message.id)
                     )
+                    self.database.commit()
+
+            # Iterate over forum_new_thread_message_id in the forum_new_thread_message table and check if the message still exists in the target channel
+            self.cursor.execute("SELECT forum_new_thread_message_id FROM forum_new_thread_message")
+            for forum_new_thread_message_id in self.cursor.fetchall():
+                if forum_new_thread_message_id[0] not in [message.id async for message in update_forum_new_thread_message_target_channel.history()]:
+                    self.cursor.execute("DELETE FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?", (forum_new_thread_message_id[0],))
                     self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_new_thread_message: {e}")
@@ -309,6 +324,20 @@ class Database(commands.Cog, name='Database'):
                                 )
                             )
                             self.database.commit()
+
+            # Iterate over message_id in the forum_message table and check if the message still exists in the target channel
+            forum_message_id = []
+            for thread in update_forum_message_source_forum_channel.threads:
+                async for message in thread.history(limit=None):
+                    forum_message_id.append(message.id)
+            async for thread in update_forum_message_source_forum_channel.archived_threads():
+                async for message in thread.history(limit=None):
+                    forum_message_id.append(message.id)
+            self.cursor.execute("SELECT message_id FROM forum_message")
+            for message_id in self.cursor.fetchall():
+                if message_id[0] not in forum_message_id:
+                    self.cursor.execute("DELETE FROM forum_message WHERE message_id = ?", (message_id[0],))
+                    self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_message: {e}")
         except Exception as e:
@@ -333,6 +362,13 @@ class Database(commands.Cog, name='Database'):
                         """,
                         (message.channel.id, message.created_at, message.edited_at, message.id)
                     )
+                    self.database.commit()
+
+            # Iterate over forum_feed_message_id in the forum_feed_message table and check if the message still exists in the target channel
+            self.cursor.execute("SELECT forum_feed_message_id FROM forum_feed_message")
+            for forum_feed_message_id in self.cursor.fetchall():
+                if forum_feed_message_id[0] not in [message.id async for message in update_forum_feed_message_target_channel.history()]:
+                    self.cursor.execute("DELETE FROM forum_feed_message WHERE forum_feed_message_id = ?", (forum_feed_message_id[0],))
                     self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_feed_message: {e}")
