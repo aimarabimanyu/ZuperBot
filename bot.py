@@ -1,12 +1,11 @@
 import os
 import json
 import sys
-import random
 import logging
 import platform
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from dotenv import load_dotenv
 
 
@@ -95,14 +94,6 @@ class DiscordBot(commands.Bot):
                         exception = f"{type(e).__name__}: {e}"
                         self.logger.error(f"Failed to load extension {extension}, {exception}")
 
-    @tasks.loop(minutes=30)
-    async def update_status(self) -> None:
-        await self.change_presence(activity=discord.Game(random.choice(config["bot_activity"])))
-
-    @update_status.before_loop
-    async def before_status_task(self) -> None:
-        await self.wait_until_ready()
-
     async def setup_hook(self) -> None:
         self.logger.info(f"Logged in as {self.user.name}")
         self.logger.info(f"discord.py API version: {discord.__version__}")
@@ -110,7 +101,6 @@ class DiscordBot(commands.Bot):
         self.logger.info(f"Running on: {platform.system()} {platform.release()} ({os.name})")
         self.logger.info("-------------------------------")
         await self.load_cogs()
-        self.update_status.start()
 
 
 # Load the environment variable

@@ -6,7 +6,8 @@
     "forum_feed_message": true,
     "forum_new_thread_message": true,
     "welcome_message": true,
-    "database": true
+    "database": true,
+    "treasury_monitoring": true
   },
   "forum_new_thread_message_settings": {
     "new_thread_message": "<@&{mention}> garapan baru {thread} sudah ada di channel diskusi garapan, jangan lupa tinggalin jejak ya",
@@ -27,5 +28,9 @@
     "member_function": "mention",
     "welcome_channel_id": 1231267273113735281,
     "rules_channel_id": 1231273076130578556
+  },
+  "treasury_monitoring_settings": {
+    "treasury_address": "0xB915584aE1481C95aecA3570dAA8ff6a1D69559B",
+    "treasury_message": "Treasury: {treasury_value} ETH on BASE"
   }
 }
