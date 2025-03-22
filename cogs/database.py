@@ -220,7 +220,7 @@ class Database(commands.Cog, name='Database'):
     """
     Do a database update every 15 minutes
     """
-    @tasks.loop(seconds=20)
+    @tasks.loop(minutes=15)
     async def update_database(self) -> None:
         await self._update_forum_thread()
         await self._update_forum_new_thread_message()

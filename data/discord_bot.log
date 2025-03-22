@@ -1,0 +1,39 @@
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: Logged in as ZuperBot Testing
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: discord.py API version: 2.3.2
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: Python version: 3.10.11
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: Running on: Windows 10 (nt)
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: -------------------------------
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: Loaded extension 'database'
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: Loaded extension 'forum_feed_message'
+[2025-03-22 20:20:34] [INFO    ] ZuperBot Testing: Loaded extension 'forum_new_thread_message'
+[2025-03-22 20:20:35] [INFO    ] ZuperBot Testing: Loaded extension 'treasury_monitoring'
+[2025-03-22 20:20:35] [INFO    ] ZuperBot Testing: Loaded extension 'welcome_message'
+[2025-03-22 20:20:38] [INFO    ] ZuperBot Testing: Treasury balance monitoring is ready
+[2025-03-22 20:20:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:20:46] [INFO    ] ZuperBot Testing: Database initialized with threads and messages from the source forum and target channel
+[2025-03-22 20:21:11] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:21:41] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:21:41] [INFO    ] ZuperBot Testing: Database updated with newest form existing threads and messages
+[2025-03-22 20:22:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:22:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:23:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:23:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:24:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:24:42] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:25:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:25:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:26:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:26:41] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:27:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:27:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:28:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:28:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:29:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:29:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:30:11] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:30:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:31:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:31:33] [INFO    ] ZuperBot Testing: Database updated with newest form existing threads and messages
+[2025-03-22 20:31:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:32:10] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0
+[2025-03-22 20:32:40] [INFO    ] ZuperBot Testing: Bot presence updated | ETH: 0.09996, USDC: 10.0, USDT: 10.0

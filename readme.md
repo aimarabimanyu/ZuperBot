@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 ```env
 DISCORD_TOKEN='your_discord_bot_token'
-RPC_URL='your_rpc_url (only base rn lmao)'
+RPC_URL='your_rpc_url (only support one EVM chain rn lmao)'
 ```
 
 5. Configure the `config.json` file with your desired settings.
