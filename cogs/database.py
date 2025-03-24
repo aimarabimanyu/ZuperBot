@@ -11,6 +11,7 @@ class Database(commands.Cog, name='Database'):
 
         # Initialize the database
         try:
+            # Connect to the database
             self.database = sqlite3.connect('data/data.db')
             self.cursor = self.database.cursor()
 
@@ -78,9 +79,9 @@ class Database(commands.Cog, name='Database'):
 
             self.database.commit()
         except sqlite3.Error as e:
-            self.logger.error(f"Database error: {e}")
+            self.logger.error(f"Database error | {e}")
         except Exception as e:
-            self.logger.error(f"Exception in __init__: {e}")
+            self.logger.error(f"Exception in __init__ | {e}")
 
     """
     Initialize the existing threads and messages into the database
@@ -95,7 +96,10 @@ class Database(commands.Cog, name='Database'):
 
             # Iterate over each ACTIVE thread in the source forum channel and insert it into database
             for thread in forumnewthreadmessage_source_forum_channel.threads:
-                self.cursor.execute("SELECT 1 FROM forum_thread WHERE thread_id = ?", (thread.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_thread WHERE thread_id = ?",
+                    (thread.id,)
+                )
                 if not self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -113,7 +117,10 @@ class Database(commands.Cog, name='Database'):
 
             # Iterate over each ARCHIVED thread in the source forum channel and insert it into database
             async for thread in forumnewthreadmessage_source_forum_channel.archived_threads(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_thread WHERE thread_id = ?", (thread.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_thread WHERE thread_id = ?",
+                    (thread.id,)
+                )
                 if not self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -129,10 +136,12 @@ class Database(commands.Cog, name='Database'):
                         )
                     )
 
-            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage
-            # and update the forum_thread table with the forum_new_thread_message_id
+            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id
             async for message in forumnewthreadmessage_target_channel.history(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?", (message.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
+                    (message.id,)
+                )
                 if not self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -141,7 +150,6 @@ class Database(commands.Cog, name='Database'):
                         """,
                         (message.id, message.channel.id, message.created_at, message.edited_at)
                     )
-
                     self.cursor.execute(
                         """
                         UPDATE forum_thread SET forum_new_thread_message_id = ? WHERE thread_id = ?
@@ -149,12 +157,14 @@ class Database(commands.Cog, name='Database'):
                         (message.id, message.embeds[0].footer.text.split(' ')[-1])
                     )
 
-            # Iterate over each message in ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID
-            # then insert it into database
+            # Iterate over each message in ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
             for thread in forumfeedmessage_source_forum_channel.threads:
                 async for message in thread.history(limit=None):
                     if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
-                        self.cursor.execute("SELECT 1 FROM forum_message WHERE message_id = ?", (message.id,))
+                        self.cursor.execute(
+                            "SELECT 1 FROM forum_message WHERE message_id = ?",
+                            (message.id,)
+                        )
                         if not self.cursor.fetchone():
                             self.cursor.execute(
                                 """
@@ -169,12 +179,14 @@ class Database(commands.Cog, name='Database'):
                                 )
                             )
 
-            # Iterate over each message in ARCHIVED SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID
-            # then insert it into database
+            # Iterate over each message in ARCHIVED SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
             async for thread in forumfeedmessage_source_forum_channel.archived_threads(limit=None):
                 async for message in thread.history(limit=None):
                     if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
-                        self.cursor.execute("SELECT 1 FROM forum_message WHERE message_id = ?", (message.id,))
+                        self.cursor.execute(
+                            "SELECT 1 FROM forum_message WHERE message_id = ?",
+                            (message.id,)
+                        )
                         if not self.cursor.fetchone():
                             self.cursor.execute(
                                 """
@@ -191,7 +203,10 @@ class Database(commands.Cog, name='Database'):
 
             # Iterate over each message in the target channel and insert it into database for ForumFeedMessage
             async for message in forumfeedmessage_target_channel.history(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?", (message.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?",
+                    (message.id,)
+                )
                 if not self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -200,7 +215,6 @@ class Database(commands.Cog, name='Database'):
                         """,
                         (message.id, message.channel.id, message.created_at, message.edited_at)
                     )
-
                     self.cursor.execute(
                         """
                         UPDATE forum_message SET forum_feed_message_id = ? WHERE message_id = ?
@@ -208,12 +222,15 @@ class Database(commands.Cog, name='Database'):
                         (message.id, message.embeds[0].footer.text.split(' ')[-1])
                     )
 
+            # Commit the all changes to the database
             self.database.commit()
+
+            # Log the database initialization
             self.logger.info("Database initialized with threads and messages from the source forum and target channel")
         except sqlite3.Error as e:
-            self.logger.error(f"Database error: {e}")
+            self.logger.error(f"Database error | {e}")
         except Exception as e:
-            self.logger.error(f"Exception in Database method on_ready: {e}")
+            self.logger.error(f"Exception in Database method on_ready | {e}")
 
         await self.update_database.start()
 
@@ -226,6 +243,8 @@ class Database(commands.Cog, name='Database'):
         await self._update_forum_new_thread_message()
         await self._update_forum_message()
         await self._update_forum_feed_message()
+
+        # Log the database update
         self.logger.info("Database updated with newest form existing threads and messages")
 
     """
@@ -233,11 +252,15 @@ class Database(commands.Cog, name='Database'):
     """
     async def _update_forum_thread(self) -> None:
         try:
+            # Get the source forum channel
             update_forum_thread_source_forum_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['source_forum_channel_id'])
 
             # Iterate over each ACTIVE thread in the source forum channel and update it into the database
             for thread in update_forum_thread_source_forum_channel.threads:
-                self.cursor.execute("SELECT 1 FROM forum_thread WHERE thread_id = ?", (thread.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_thread WHERE thread_id = ?",
+                    (thread.id,)
+                )
                 if self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -255,12 +278,19 @@ class Database(commands.Cog, name='Database'):
                     )
                     self.database.commit()
 
-            # Iterate over thread_id in the forum_thread table and check if the thread still exists as ACTIVE THREAD in the source forum channel
-            self.cursor.execute("SELECT thread_id FROM forum_thread")
+            # Iterate over thread_id in the forum_thread table and check if the thread still exists as ACTIVE THREAD and ARCHIVED THREAD in the source forum channel, if not then delete it from the database
+            self.cursor.execute(
+                "SELECT thread_id FROM forum_thread"
+            )
             for thread_id in self.cursor.fetchall():
-                if thread_id[0] not in [thread.id for thread in update_forum_thread_source_forum_channel.threads] and thread_id[0] not in [thread.id async for thread in update_forum_thread_source_forum_channel.archived_threads()]:
-                    print(thread_id[0])
-                    self.cursor.execute("DELETE FROM forum_thread WHERE thread_id = ?", (thread_id[0],))
+                if (
+                        thread_id[0] not in [thread.id for thread in update_forum_thread_source_forum_channel.threads]
+                        and thread_id[0] not in [thread.id async for thread in update_forum_thread_source_forum_channel.archived_threads()]
+                ):
+                    self.cursor.execute(
+                        "DELETE FROM forum_thread WHERE thread_id = ?",
+                        (thread_id[0],)
+                    )
                     self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_thread: {e}")
@@ -272,11 +302,15 @@ class Database(commands.Cog, name='Database'):
     """
     async def _update_forum_new_thread_message(self) -> None:
         try:
+            # Get the target channel
             update_forum_new_thread_message_target_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['target_channel_id'])
 
             # Iterate over each message in the target channel and update it into the database
             async for message in update_forum_new_thread_message_target_channel.history(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?", (message.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
+                    (message.id,)
+                )
                 if self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -288,11 +322,16 @@ class Database(commands.Cog, name='Database'):
                     )
                     self.database.commit()
 
-            # Iterate over forum_new_thread_message_id in the forum_new_thread_message table and check if the message still exists in the target channel
-            self.cursor.execute("SELECT forum_new_thread_message_id FROM forum_new_thread_message")
+            # Iterate over forum_new_thread_message_id in the forum_new_thread_message table and check if the message still exists in the target channel, if not then delete it from the database
+            self.cursor.execute(
+                "SELECT forum_new_thread_message_id FROM forum_new_thread_message"
+            )
             for forum_new_thread_message_id in self.cursor.fetchall():
                 if forum_new_thread_message_id[0] not in [message.id async for message in update_forum_new_thread_message_target_channel.history()]:
-                    self.cursor.execute("DELETE FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?", (forum_new_thread_message_id[0],))
+                    self.cursor.execute(
+                        "DELETE FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
+                        (forum_new_thread_message_id[0],)
+                    )
                     self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_new_thread_message: {e}")
@@ -304,14 +343,17 @@ class Database(commands.Cog, name='Database'):
     """
     async def _update_forum_message(self) -> None:
         try:
+            # Get the source forum channel
             update_forum_message_source_forum_channel = self.client.get_channel(self.config['forum_feed_message_settings']['source_forum_channel_id'])
 
-            # Iterate over each ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID
-            # then update it into database
+            # Iterate over each ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then update it into database
             for thread in update_forum_message_source_forum_channel.threads:
                 async for message in thread.history(limit=None):
                     if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
-                        self.cursor.execute("SELECT 1 FROM forum_message WHERE message_id = ?", (message.id,))
+                        self.cursor.execute(
+                            "SELECT 1 FROM forum_message WHERE message_id = ?",
+                            (message.id,)
+                        )
                         if self.cursor.fetchone():
                             self.cursor.execute(
                                 """
@@ -325,7 +367,7 @@ class Database(commands.Cog, name='Database'):
                             )
                             self.database.commit()
 
-            # Iterate over message_id in the forum_message table and check if the message still exists in the target channel
+            # Iterate over message_id in the forum_message table and check if the message still exists in the target channel, if not then delete it from the database
             forum_message_id = []
             for thread in update_forum_message_source_forum_channel.threads:
                 async for message in thread.history(limit=None):
@@ -333,10 +375,15 @@ class Database(commands.Cog, name='Database'):
             async for thread in update_forum_message_source_forum_channel.archived_threads():
                 async for message in thread.history(limit=None):
                     forum_message_id.append(message.id)
-            self.cursor.execute("SELECT message_id FROM forum_message")
+            self.cursor.execute(
+                "SELECT message_id FROM forum_message"
+            )
             for message_id in self.cursor.fetchall():
                 if message_id[0] not in forum_message_id:
-                    self.cursor.execute("DELETE FROM forum_message WHERE message_id = ?", (message_id[0],))
+                    self.cursor.execute(
+                        "DELETE FROM forum_message WHERE message_id = ?",
+                        (message_id[0],)
+                    )
                     self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_message: {e}")
@@ -348,11 +395,15 @@ class Database(commands.Cog, name='Database'):
     """
     async def _update_forum_feed_message(self) -> None:
         try:
+            # Get the target channel
             update_forum_feed_message_target_channel = self.client.get_channel(self.config['forum_feed_message_settings']['target_channel_id'])
 
             # Iterate over each message in the target channel and update it into the database
             async for message in update_forum_feed_message_target_channel.history(limit=None):
-                self.cursor.execute("SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?", (message.id,))
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?",
+                    (message.id,)
+                )
                 if self.cursor.fetchone():
                     self.cursor.execute(
                         """
@@ -364,11 +415,16 @@ class Database(commands.Cog, name='Database'):
                     )
                     self.database.commit()
 
-            # Iterate over forum_feed_message_id in the forum_feed_message table and check if the message still exists in the target channel
-            self.cursor.execute("SELECT forum_feed_message_id FROM forum_feed_message")
+            # Iterate over forum_feed_message_id in the forum_feed_message table and check if the message still exists in the target channel, if not then delete it from the database
+            self.cursor.execute(
+                "SELECT forum_feed_message_id FROM forum_feed_message"
+            )
             for forum_feed_message_id in self.cursor.fetchall():
                 if forum_feed_message_id[0] not in [message.id async for message in update_forum_feed_message_target_channel.history()]:
-                    self.cursor.execute("DELETE FROM forum_feed_message WHERE forum_feed_message_id = ?", (forum_feed_message_id[0],))
+                    self.cursor.execute(
+                        "DELETE FROM forum_feed_message WHERE forum_feed_message_id = ?",
+                        (forum_feed_message_id[0],)
+                    )
                     self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error in _update_forum_feed_message: {e}")

@@ -18,86 +18,97 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
         self.logger = self.client.logger
         self.w3 = Web3(Web3.HTTPProvider(os.getenv('RPC_URL')))
         self.treasury_address = self.config['treasury_monitoring_settings']['treasury_address']
-        self.usdc_contract_address = self.config['treasury_monitoring_settings']['usdc_contract_address']
-        self.usdc_abi = self.config['treasury_monitoring_settings']['usdc_abi']
-        self.usdc_contract = self.w3.eth.contract(address=self.usdc_contract_address, abi=self.usdc_abi)
-        self.usdt_contract_address = self.config['treasury_monitoring_settings']['usdt_contract_address']
-        self.usdt_abi = self.config['treasury_monitoring_settings']['usdt_abi']
-        self.usdt_contract = self.w3.eth.contract(address=self.usdt_contract_address, abi=self.usdt_abi)
+        self.usdc_contract = self.w3.eth.contract(
+            address=self.config['treasury_monitoring_settings']['usdc_contract_address'],
+            abi=self.config['treasury_monitoring_settings']['usdc_abi']
+        )
+        self.usdt_contract = self.w3.eth.contract(
+            address=self.config['treasury_monitoring_settings']['usdt_contract_address'],
+            abi=self.config['treasury_monitoring_settings']['usdt_abi']
+        )
         self.last_block = self.w3.eth.block_number
         self.alchemy_webhook_payload_data = {}
         self.treasury_balance_presence.start()
 
+    """
+    Static method to censor the wallet address
+    """
     @staticmethod
     def censor_wallet_address(address):
-        if len(address) < 20:
-            return address
-        return f"{address[:7]}...{address[-5:]}"
+        return f"{address[:7]}...{address[-5:]}" if len(address) >= 20 else address
 
+    """
+    Update the bot presence with the treasury balance every 30 seconds
+    """
     @tasks.loop(seconds=30)
     async def treasury_balance_presence(self) -> None:
-        checksum_treasury_address = self.w3.to_checksum_address(self.treasury_address)
-        eth_treasury_value = self.w3.eth.get_balance(checksum_treasury_address)
-        eth_treasury_value = round(self.w3.from_wei(eth_treasury_value, 'ether'), 5)
-        usdc_treasury_value = self.usdc_contract.functions.balanceOf(checksum_treasury_address).call()
-        usdc_treasury_value = round(usdc_treasury_value / 10**6, 2)
-        usdt_treasury_value = self.usdt_contract.functions.balanceOf(checksum_treasury_address).call()
-        usdt_treasury_value = round(usdt_treasury_value / 10**6, 2)
-        await self.client.change_presence(activity=discord.Activity(
-                type=discord.ActivityType.watching,
-                name="ETH: {0} | USDC: {1} | USDT: {2}".format(eth_treasury_value, usdc_treasury_value, usdt_treasury_value)
-            )
-        )
-        self.logger.info(f"Bot presence updated | ETH: {eth_treasury_value}, USDC: {usdc_treasury_value}, USDT: {usdt_treasury_value}")
+        try:
+            # Get the treasury balance
+            checksum_treasury_address = self.w3.to_checksum_address(self.treasury_address)
+            eth_balance = round(self.w3.from_wei(self.w3.eth.get_balance(checksum_treasury_address), 'ether'), 5)
+            usdc_balance = round(self.usdc_contract.functions.balanceOf(checksum_treasury_address).call() / 10 ** 6, 2)
+            usdt_balance = round(self.usdt_contract.functions.balanceOf(checksum_treasury_address).call() / 10 ** 6, 2)
 
+            # Change the bot presence
+            await self.client.change_presence(activity=discord.Activity(
+                    type=discord.ActivityType.watching,
+                    name="ETH: {0} | USDC: {1} | USDT: {2}".format(eth_balance, usdc_balance, usdt_balance)
+                )
+            )
+
+            # Log the treasury balance
+            self.logger.info(f"Bot presence updated | ETH: {eth_balance}, USDC: {usdc_balance}, USDT: {usdt_balance}")
+        except Exception as e:
+            self.logger.error(f"Failed to update bot presence | {e}")
+
+    """
+    Webhook endpoint to receive the transaction data from Alchemy API
+    """
     async def alchemy_webhook(self):
+        # Get the payload data from the webhook
         self.alchemy_webhook_payload_data = request.json
+
+        # Call the transaction monitoring method to send the notification
         await self.transaction_monitoring()
+
+        # Return the response
         return jsonify({'status': 'success'})
 
+    """
+    Send the notification to the target channel if the transaction is detected
+    """
     async def transaction_monitoring(self) -> None:
-        transaction_monitoring_target_channel = self.client.get_channel(int(self.config['treasury_monitoring_settings']['target_channel_id']))
+        try:
+            # Get the target channel to send the notification
+            target_channel = self.client.get_channel(int(self.config['treasury_monitoring_settings']['target_channel_id']))
 
-        embed = discord.Embed(
-            title="Transaction Detected",
-            description="Outgoing transaction from the treasury address",
-            color=discord.Color.orange()
-        )
-        embed.add_field(
-            name="Transaction Hash",
-            value=f"{(self.alchemy_webhook_payload_data['event']['activity'][0]['hash'])}",
-            inline=False
-        )
-        embed.add_field(
-            name="Value",
-            value=f"{self.alchemy_webhook_payload_data['event']['activity'][0]['value']} {self.alchemy_webhook_payload_data['event']['activity'][0]['asset']}",
-            inline=True
-        )
-        embed.add_field(
-            name="Sender",
-            value=self.censor_wallet_address(self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress']),
-            inline=True
-        )
-        embed.add_field(
-            name="Recipient",
-            value=self.censor_wallet_address(self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress']),
-            inline=True
-        )
+            # Create the embed message
+            embed = discord.Embed(title="Transaction Detected", description="Outgoing transaction from the treasury address", color=discord.Color.orange())
+            embed.add_field(name="Transaction Hash", value=f"{(self.alchemy_webhook_payload_data['event']['activity'][0]['hash'])}", inline=False)
+            embed.add_field(name="Value", value=f"{self.alchemy_webhook_payload_data['event']['activity'][0]['value']} {self.alchemy_webhook_payload_data['event']['activity'][0]['asset']}",  inline=True)
+            embed.add_field(name="Sender", value=self.censor_wallet_address(self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress']), inline=True)
+            embed.add_field(name="Recipient", value=self.censor_wallet_address(self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress']), inline=True)
 
-        if self.alchemy_webhook_payload_data['event']['activity'][0]['value'] > 0:
-            if self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress'].lower() == self.treasury_address.lower():
-                await transaction_monitoring_target_channel.send(embed=embed)
+            # Check if the transaction is outgoing or incoming
+            if self.alchemy_webhook_payload_data['event']['activity'][0]['value'] > 0:
+                if self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress'].lower() == self.treasury_address.lower():
+                    await target_channel.send(embed=embed)
 
-                self.logger.info(
-                    f"Outgoing transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
-            if self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress'].lower() == self.treasury_address.lower():
-                embed.description = "Incoming transaction to the treasury address"
+                    self.logger.info(
+                        f"Outgoing transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
+                if self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress'].lower() == self.treasury_address.lower():
+                    embed.description = "Incoming transaction to the treasury address"
 
-                await transaction_monitoring_target_channel.send(embed=embed)
+                    await target_channel.send(embed=embed)
 
-                self.logger.info(
-                    f"Incoming transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
+                    self.logger.info(
+                        f"Incoming transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
+        except Exception as e:
+            self.logger.error(f"Failed to send the notification | {e}")
 
+    """
+    Run the treasury balance monitoring before the loop starts
+    """
     @treasury_balance_presence.before_loop
     async def treasury_balance_monitoring_before_loop(self) -> None:
         await self.client.wait_until_ready()

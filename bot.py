@@ -23,35 +23,22 @@ intent.members = True
 
 # Set the loggers format and colors for discord bot
 class LoggingFormatter(logging.Formatter):
-    # Colors
-    black = "\x1b[30m"
-    red = "\x1b[31m"
-    green = "\x1b[32m"
-    yellow = "\x1b[33m"
-    blue = "\x1b[34m"
-    gray = "\x1b[38m"
-
-    # Styles
-    reset = "\x1b[0m"
-    bold = "\x1b[1m"
-
     COLORS = {
-        logging.DEBUG: gray + bold,
-        logging.INFO: blue + bold,
-        logging.WARNING: yellow + bold,
-        logging.ERROR: red,
-        logging.CRITICAL: red + bold,
+        logging.DEBUG: "\x1b[38m\x1b[1m",
+        logging.INFO: "\x1b[34m\x1b[1m",
+        logging.WARNING: "\x1b[33m\x1b[1m",
+        logging.ERROR: "\x1b[31m",
+        logging.CRITICAL: "\x1b[31m\x1b[1m",
     }
+    RESET = "\x1b[0m"
+    BOLD = "\x1b[1m"
+    BLACK = "\x1b[30m"
+    GREEN = "\x1b[32m"
 
     def format(self, record) -> str:
         log_color = self.COLORS[record.levelno]
-        format = "(black){asctime}(reset) (levelcolor){levelname:<8}(reset) (green){name}(reset) {message}"
-        format = format.replace("(black)", self.black + self.bold)
-        format = format.replace("(reset)", self.reset)
-        format = format.replace("(levelcolor)", log_color)
-        format = format.replace("(green)", self.green + self.bold)
+        format = f"{self.BLACK}{self.BOLD}{{asctime}}{self.RESET} {log_color}{{levelname:<8}}{self.RESET} {self.GREEN}{self.BOLD}{{name}}{self.RESET} {{message}}"
         formatter = logging.Formatter(format, "%Y-%m-%d %H:%M:%S", style="{")
-
         return formatter.format(record)
 
 
@@ -65,10 +52,7 @@ console_handler.setFormatter(LoggingFormatter())
 
 # Create a log file handler and set the formatter
 file_handler = logging.FileHandler("data/discord_bot.log", encoding="utf-8", mode="w")
-file_handler_formatter = logging.Formatter(
-    "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
-)
-file_handler.setFormatter(file_handler_formatter)
+file_handler.setFormatter(logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"))
 
 # Add the handlers to the logger
 logger.addHandler(console_handler)
