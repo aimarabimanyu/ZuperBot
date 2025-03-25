@@ -6,6 +6,7 @@ from web3 import Web3
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import threading
+from waitress import serve
 
 
 app = Flask(__name__)
@@ -122,6 +123,7 @@ def run_flask(treasury_monitoring_instance, loop) -> None:
         return result
 
     app.add_url_rule('/alchemy_webhook', 'alchemy_webhook', alchemy_webhook_handler, methods=['GET', 'POST'])
+    serve(app, host='0.0.0.0', port=5000, _quiet=True)
 
 
 async def setup(client) -> None:

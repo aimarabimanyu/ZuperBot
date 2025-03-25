@@ -46,17 +46,19 @@ class LoggingFormatter(logging.Formatter):
 logger = logging.getLogger(config["bot_name"])
 logger.setLevel(logging.INFO)
 
-# Set log console handler and formatter
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(LoggingFormatter())
+# Check if handlers are already added to avoid duplicate logs
+if not logger.handlers:
+    # Set log console handler and formatter
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(LoggingFormatter())
 
-# Create a log file handler and set the formatter
-file_handler = logging.FileHandler("data/discord_bot.log", encoding="utf-8", mode="w")
-file_handler.setFormatter(logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"))
+    # Create a log file handler and set the formatter
+    file_handler = logging.FileHandler("data/discord_bot.log", encoding="utf-8", mode="w")
+    file_handler.setFormatter(logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"))
 
-# Add the handlers to the logger
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+    # Add the handlers to the logger
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
 
 # Initialize the bot
