@@ -53,7 +53,8 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
             # Change the bot presence
             await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.watching,
-                    name="ETH: {0} | USDC: {1} | USDT: {2}".format(eth_balance, usdc_balance, usdt_balance)
+                    name="Treasury Balance",
+                    state="ETH: {0} | USDC: {1} | USDT: {2}".format(eth_balance, usdc_balance, usdt_balance),
                 )
             )
 
