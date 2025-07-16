@@ -152,7 +152,7 @@ class Database(commands.Cog, name='Database'):
                         )
                     )
 
-            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id'
+            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id
             async for message in tqdm_asyncio(forumnewthreadmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumNewThreadMessage"):
                 self.cursor.execute(
                     "SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
