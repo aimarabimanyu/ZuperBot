@@ -120,8 +120,8 @@ class Database(commands.Cog, name='Database'):
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
-                            thread.id, thread.name, thread.parent_id, thread.parent.name, thread.owner_id,
-                            thread.owner.name, thread.created_at, thread.jump_url, thread.member_count,
+                            thread.id, thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id,
+                            thread.owner.name if thread.owner else "Unknown", thread.created_at, thread.jump_url, thread.member_count,
                             thread.message_count, thread.locked, thread.archived, None
                         )
                     )
@@ -141,8 +141,8 @@ class Database(commands.Cog, name='Database'):
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
-                            thread.id, thread.name, thread.parent_id, thread.parent.name, thread.owner_id,
-                            thread.owner.name, thread.created_at, thread.jump_url, thread.member_count,
+                            thread.id, thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id,
+                            thread.owner.name if thread.owner else "Unknown", thread.created_at, thread.jump_url, thread.member_count,
                             thread.message_count, thread.locked, thread.archived, None
                         )
                     )
@@ -185,7 +185,7 @@ class Database(commands.Cog, name='Database'):
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                                 """,
                                 (
-                                    message.id, thread.id, message.author.id, message.author.name,
+                                    message.id, thread.id, message.author.id, message.author.name if message.author else "Unknown",
                                     message.created_at, message.edited_at, None
                                 )
                             )
@@ -207,7 +207,7 @@ class Database(commands.Cog, name='Database'):
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                                 """,
                                 (
-                                    message.id, thread.id, message.author.id, message.author.name,
+                                    message.id, thread.id, message.author.id, message.author.name if message.author else "Unknown",
                                     message.created_at, message.edited_at, None
                                 )
                             )
@@ -282,7 +282,7 @@ class Database(commands.Cog, name='Database'):
                         WHERE thread_id = ?
                         """,
                         (
-                            thread.name, thread.parent_id, thread.parent.name, thread.owner_id, thread.owner.name,
+                            thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id, thread.owner.name if thread.owner else "Unknown",
                             thread.created_at, thread.jump_url, thread.member_count, thread.message_count,
                             thread.locked, thread.archived, thread.id
                         )
@@ -373,7 +373,7 @@ class Database(commands.Cog, name='Database'):
                                 WHERE message_id = ?
                                 """,
                                 (
-                                    thread.id, message.author.id, message.author.name, message.created_at, message.edited_at, message.id
+                                    thread.id, message.author.id, message.author.name if message.author else "Unknown", message.created_at, message.edited_at, message.id
                                 )
                             )
                             self.database.commit()
