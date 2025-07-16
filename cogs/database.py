@@ -77,6 +77,17 @@ class Database(commands.Cog, name='Database'):
                 """
             )
 
+            # Create the telegram mirror chat table
+            self.cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS telegram_messages (
+                    message_id INTEGER PRIMARY KEY,
+                    datetime TEXT,
+                    discord_message_id TEXT
+                )
+                """
+            )
+
             self.database.commit()
         except sqlite3.Error as e:
             self.logger.error(f"Database error | {e}")
