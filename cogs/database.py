@@ -1,5 +1,7 @@
 from discord.ext import commands, tasks
 import sqlite3
+from tqdm import tqdm
+from tqdm.asyncio import tqdm_asyncio
 
 
 # Create a new class called Database
@@ -8,6 +10,7 @@ class Database(commands.Cog, name='Database'):
         self.client = client
         self.config = self.client.config
         self.logger = self.client.logger
+        self.initialization_complete = False
 
         # Initialize the database
         try:
@@ -106,7 +109,8 @@ class Database(commands.Cog, name='Database'):
             forumfeedmessage_target_channel = self.client.get_channel(self.config['forum_feed_message_settings']['target_channel_id'])
 
             # Iterate over each ACTIVE thread in the source forum channel and insert it into database
-            for thread in forumnewthreadmessage_source_forum_channel.threads:
+            active_threads = forumnewthreadmessage_source_forum_channel.threads
+            for thread in tqdm(active_threads, desc="Processing active threads"):
                 self.cursor.execute(
                     "SELECT 1 FROM forum_thread WHERE thread_id = ?",
                     (thread.id,)
@@ -127,7 +131,8 @@ class Database(commands.Cog, name='Database'):
                     )
 
             # Iterate over each ARCHIVED thread in the source forum channel and insert it into database
-            async for thread in forumnewthreadmessage_source_forum_channel.archived_threads(limit=None):
+            archived_threads = forumnewthreadmessage_source_forum_channel.archived_threads(limit=None)
+            async for thread in tqdm_asyncio(archived_threads, desc="Processing archived threads"):
                 self.cursor.execute(
                     "SELECT 1 FROM forum_thread WHERE thread_id = ?",
                     (thread.id,)
@@ -147,8 +152,8 @@ class Database(commands.Cog, name='Database'):
                         )
                     )
 
-            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id
-            async for message in forumnewthreadmessage_target_channel.history(limit=None):
+            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id'
+            async for message in tqdm_asyncio(forumnewthreadmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumNewThreadMessage"):
                 self.cursor.execute(
                     "SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
                     (message.id,)
@@ -169,7 +174,7 @@ class Database(commands.Cog, name='Database'):
                     )
 
             # Iterate over each message in ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
-            for thread in forumfeedmessage_source_forum_channel.threads:
+            for thread in tqdm(forumfeedmessage_source_forum_channel.threads, desc="Processing message containing trigger role in active threads"):
                 async for message in thread.history(limit=None):
                     if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
                         self.cursor.execute(
@@ -191,7 +196,7 @@ class Database(commands.Cog, name='Database'):
                             )
 
             # Iterate over each message in ARCHIVED SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
-            async for thread in forumfeedmessage_source_forum_channel.archived_threads(limit=None):
+            async for thread in tqdm_asyncio(forumfeedmessage_source_forum_channel.archived_threads(limit=None), desc="Processing message containing trigger role in archived threads"):
                 async for message in thread.history(limit=None):
                     if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
                         self.cursor.execute(
@@ -213,7 +218,7 @@ class Database(commands.Cog, name='Database'):
                             )
 
             # Iterate over each message in the target channel and insert it into database for ForumFeedMessage
-            async for message in forumfeedmessage_target_channel.history(limit=None):
+            async for message in tqdm_asyncio(forumfeedmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumFeedMessage"):
                 self.cursor.execute(
                     "SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?",
                     (message.id,)
@@ -242,6 +247,8 @@ class Database(commands.Cog, name='Database'):
             self.logger.error(f"Database error | {e}")
         except Exception as e:
             self.logger.error(f"Exception in Database method on_ready | {e}")
+        finally:
+            self.initialization_complete = True
 
         await self.update_database.start()
 
@@ -250,6 +257,9 @@ class Database(commands.Cog, name='Database'):
     """
     @tasks.loop(minutes=15)
     async def update_database(self) -> None:
+        if not self.initialization_complete:
+            self.logger.warning("update_database called before initialization is complete")
+            return
         await self._update_forum_thread()
         await self._update_forum_new_thread_message()
         await self._update_forum_message()
