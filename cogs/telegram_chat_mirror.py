@@ -128,18 +128,29 @@ class TelegramToDiscord(commands.Cog):
             if event.message.reply_to is None:
                 if message:
                     for part in message:
-                        if part == message[0]:
-                            discord_message1 = await target_channel.send("```{} | {}``` \n {}".format(
+                        if part == message[0] and len(message) > 1:
+                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
                                 post_author if post_author else "Unknown Author",
                                 (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
                                 part
                             ))
+                        elif part == message[-1] and len(message) > 1:
+                            discord_message = await target_channel.send(part, file=discord.File(file_temp))
+                            os.remove(file_temp)
+                        elif len(message) == 1:
+                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
+                                post_author if post_author else "Unknown Author",
+                                (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
+                                part
+                            ), file=discord.File(file_temp))
+                            os.remove(file_temp)
                         else:
-                            discord_message1 = await target_channel.send(part)
-                        discord_message_id.append(discord_message1.id)
-                discord_message2 = await target_channel.send(file=discord.File(file_temp))
-                discord_message_id.append(discord_message2.id)
-                os.remove(file_temp)
+                            discord_message = await target_channel.send(part)
+                        discord_message_id.append(discord_message.id)
+                else:
+                    discord_message = await target_channel.send(file=discord.File(file_temp))
+                    discord_message_id.append(discord_message.id)
+                    os.remove(file_temp)
 
             # If the message is replying to another message
             elif event.message.reply_to is not None:
@@ -155,20 +166,29 @@ class TelegramToDiscord(commands.Cog):
 
                 if message:
                     for part in message:
-                        if part == message[0]:
-                            discord_message1 = await target_channel.send("```{} | {}``` \n {}".format(
+                        if part == message[0] and len(message) > 1:
+                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
                                 post_author if post_author else "Unknown Author",
                                 (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
                                 part
                             ), reference=replied_message)
+                        elif part == message[-1] and len(message) > 1:
+                            discord_message = await target_channel.send(part, file=discord.File(file_temp), reference=replied_message)
+                            os.remove(file_temp)
+                        elif len(message) == 1:
+                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
+                                post_author if post_author else "Unknown Author",
+                                (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:S'),
+                                part
+                            ), file=discord.File(file_temp), reference=replied_message)
+                            os.remove(file_temp)
                         else:
-                            discord_message1 = await target_channel.send(part)
-                        discord_message_id.append(discord_message1.id)
-                    discord_message2 = await target_channel.send(file=discord.File(file_temp), reference=replied_message)
+                            discord_message = await target_channel.send(part)
+                        discord_message_id.append(discord_message.id)
                 else:
-                    discord_message2 = await target_channel.send(file=discord.File(file_temp))
-                discord_message_id.append(discord_message2.id)
-                os.remove(file_temp)
+                    discord_message = await target_channel.send(file=discord.File(file_temp))
+                    discord_message_id.append(discord_message.id)
+                    os.remove(file_temp)
 
             cursor.execute(
                 """
