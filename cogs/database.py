@@ -2,6 +2,7 @@ from discord.ext import commands, tasks
 import sqlite3
 from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
+import os
 
 
 # Create a new class called Database
@@ -14,6 +15,13 @@ class Database(commands.Cog, name='Database'):
 
         # Initialize the database
         try:
+            # Delete the existing database file if it exists
+            try:
+                if os.path.exists('data/data.db'):
+                    os.remove('data/data.db')
+            except Exception as e:
+                self.logger.error(f"Error deleting existing database file: {e}")
+
             # Connect to the database
             self.database = sqlite3.connect('data/data.db')
             self.cursor = self.database.cursor()
@@ -102,160 +110,155 @@ class Database(commands.Cog, name='Database'):
     """
     @commands.Cog.listener()
     async def on_ready(self) -> None:
-        if all(self.cursor.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0] == 0 for table_name in ["forum_new_thread_message", "forum_thread", "forum_feed_message", "forum_message", "telegram_messages"]):
-            try:
-                forumnewthreadmessage_source_forum_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['source_forum_channel_id'])
-                forumfeedmessage_source_forum_channel = self.client.get_channel(self.config['forum_feed_message_settings']['source_forum_channel_id'])
-                forumnewthreadmessage_target_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['target_channel_id'])
-                forumfeedmessage_target_channel = self.client.get_channel(self.config['forum_feed_message_settings']['target_channel_id'])
+        try:
+            forumnewthreadmessage_source_forum_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['source_forum_channel_id'])
+            forumfeedmessage_source_forum_channel = self.client.get_channel(self.config['forum_feed_message_settings']['source_forum_channel_id'])
+            forumnewthreadmessage_target_channel = self.client.get_channel(self.config['forum_new_thread_message_settings']['target_channel_id'])
+            forumfeedmessage_target_channel = self.client.get_channel(self.config['forum_feed_message_settings']['target_channel_id'])
 
-                # Iterate over each ACTIVE thread in the source forum channel and insert it into database
-                active_threads = forumnewthreadmessage_source_forum_channel.threads
-                for thread in tqdm(active_threads, desc="Processing active threads"):
+            # Iterate over each ACTIVE thread in the source forum channel and insert it into database
+            active_threads = forumnewthreadmessage_source_forum_channel.threads
+            for thread in tqdm(active_threads, desc="Processing active threads"):
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_thread WHERE thread_id = ?",
+                    (thread.id,)
+                )
+                if not self.cursor.fetchone():
                     self.cursor.execute(
-                        "SELECT 1 FROM forum_thread WHERE thread_id = ?",
-                        (thread.id,)
-                    )
-                    if not self.cursor.fetchone():
-                        self.cursor.execute(
-                            """
-                            INSERT INTO forum_thread (
-                                thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
-                                created_at, jump_url, member_count, message_count, locked, archived, forum_new_thread_message_id
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """,
-                            (
-                                thread.id, thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id,
-                                thread.owner.name if thread.owner else "Unknown", thread.created_at, thread.jump_url, thread.member_count,
-                                thread.message_count, thread.locked, thread.archived, None
-                            )
+                        """
+                        INSERT INTO forum_thread (
+                            thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
+                            created_at, jump_url, member_count, message_count, locked, archived, forum_new_thread_message_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            thread.id, thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id,
+                            thread.owner.name if thread.owner else "Unknown", thread.created_at, thread.jump_url, thread.member_count,
+                            thread.message_count, thread.locked, thread.archived, None
                         )
+                    )
 
-                # Iterate over each ARCHIVED thread in the source forum channel and insert it into database
-                archived_threads = forumnewthreadmessage_source_forum_channel.archived_threads(limit=None)
-                async for thread in tqdm_asyncio(archived_threads, desc="Processing archived threads"):
+            # Iterate over each ARCHIVED thread in the source forum channel and insert it into database
+            archived_threads = forumnewthreadmessage_source_forum_channel.archived_threads(limit=None)
+            async for thread in tqdm_asyncio(archived_threads, desc="Processing archived threads"):
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_thread WHERE thread_id = ?",
+                    (thread.id,)
+                )
+                if not self.cursor.fetchone():
                     self.cursor.execute(
-                        "SELECT 1 FROM forum_thread WHERE thread_id = ?",
-                        (thread.id,)
-                    )
-                    if not self.cursor.fetchone():
-                        self.cursor.execute(
-                            """
-                            INSERT INTO forum_thread (
-                                thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
-                                created_at, jump_url, member_count, message_count, locked, archived, forum_new_thread_message_id
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """,
-                            (
-                                thread.id, thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id,
-                                thread.owner.name if thread.owner else "Unknown", thread.created_at, thread.jump_url, thread.member_count,
-                                thread.message_count, thread.locked, thread.archived, None
-                            )
+                        """
+                        INSERT INTO forum_thread (
+                            thread_id, thread_name, thread_location_id, thread_location, author_id, author_name,
+                            created_at, jump_url, member_count, message_count, locked, archived, forum_new_thread_message_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            thread.id, thread.name, thread.parent_id, thread.parent.name if thread.parent else "Unknown", thread.owner_id,
+                            thread.owner.name if thread.owner else "Unknown", thread.created_at, thread.jump_url, thread.member_count,
+                            thread.message_count, thread.locked, thread.archived, None
                         )
+                    )
 
-                # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id
-                async for message in tqdm_asyncio(forumnewthreadmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumNewThreadMessage"):
+            # Iterate over each message in the target channel and insert it into database for ForumNewThreadMessage and update the forum_thread table with the forum_new_thread_message_id
+            async for message in tqdm_asyncio(forumnewthreadmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumNewThreadMessage"):
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
+                    (message.id,)
+                )
+                if not self.cursor.fetchone():
                     self.cursor.execute(
-                        "SELECT 1 FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
-                        (message.id,)
+                        """
+                        INSERT INTO forum_new_thread_message (forum_new_thread_message_id, channel_id, created_at, edited_at
+                        ) VALUES (?, ?, ?, ?)
+                        """,
+                        (message.id, message.channel.id, message.created_at, message.edited_at)
                     )
-                    if not self.cursor.fetchone():
-                        self.cursor.execute(
-                            """
-                            INSERT INTO forum_new_thread_message (forum_new_thread_message_id, channel_id, created_at, edited_at
-                            ) VALUES (?, ?, ?, ?)
-                            """,
-                            (message.id, message.channel.id, message.created_at, message.edited_at)
-                        )
-                        self.cursor.execute(
-                            """
-                            UPDATE forum_thread SET forum_new_thread_message_id = ? WHERE thread_id = ?
-                            """,
-                            (message.id, message.embeds[0].footer.text.split(' ')[-1])
-                        )
+                    self.cursor.execute(
+                        """
+                        UPDATE forum_thread SET forum_new_thread_message_id = ? WHERE thread_id = ?
+                        """,
+                        (message.id, message.embeds[0].footer.text.split(' ')[-1])
+                    )
 
-                # Iterate over each message in ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
-                for thread in tqdm(forumfeedmessage_source_forum_channel.threads, desc="Processing message containing trigger role in active threads"):
-                    async for message in thread.history(limit=None):
-                        if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
+            # Iterate over each message in ACTIVE SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
+            for thread in tqdm(forumfeedmessage_source_forum_channel.threads, desc="Processing message containing trigger role in active threads"):
+                async for message in thread.history(limit=None):
+                    if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
+                        self.cursor.execute(
+                            "SELECT 1 FROM forum_message WHERE message_id = ?",
+                            (message.id,)
+                        )
+                        if not self.cursor.fetchone():
                             self.cursor.execute(
-                                "SELECT 1 FROM forum_message WHERE message_id = ?",
-                                (message.id,)
-                            )
-                            if not self.cursor.fetchone():
-                                self.cursor.execute(
-                                    """
-                                    INSERT INTO forum_message (
-                                        message_id, thread_location_id, author_id, author_name, created_at, edited_at,
-                                        forum_feed_message_id
-                                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                                    """,
-                                    (
-                                        message.id, thread.id, message.author.id, message.author.name if message.author else "Unknown",
-                                        message.created_at, message.edited_at, None
-                                    )
+                                """
+                                INSERT INTO forum_message (
+                                    message_id, thread_location_id, author_id, author_name, created_at, edited_at,
+                                    forum_feed_message_id
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (
+                                    message.id, thread.id, message.author.id, message.author.name if message.author else "Unknown",
+                                    message.created_at, message.edited_at, None
                                 )
+                            )
 
-                # Iterate over each message in ARCHIVED SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
-                async for thread in tqdm_asyncio(forumfeedmessage_source_forum_channel.archived_threads(limit=None), desc="Processing message containing trigger role in archived threads"):
-                    async for message in thread.history(limit=None):
-                        if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
+            # Iterate over each message in ARCHIVED SOURCE FORUM CHANNEL THREAD and IF CONTAINS TRIGGER ROLE ID then insert it into database
+            async for thread in tqdm_asyncio(forumfeedmessage_source_forum_channel.archived_threads(limit=None), desc="Processing message containing trigger role in archived threads"):
+                async for message in thread.history(limit=None):
+                    if self.config['forum_feed_message_settings']['trigger_role_id'] in message.raw_role_mentions:
+                        self.cursor.execute(
+                            "SELECT 1 FROM forum_message WHERE message_id = ?",
+                            (message.id,)
+                        )
+                        if not self.cursor.fetchone():
                             self.cursor.execute(
-                                "SELECT 1 FROM forum_message WHERE message_id = ?",
-                                (message.id,)
-                            )
-                            if not self.cursor.fetchone():
-                                self.cursor.execute(
-                                    """
-                                    INSERT INTO forum_message (
-                                        message_id, thread_location_id, author_id, author_name, created_at, edited_at,
-                                        forum_feed_message_id
-                                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                                    """,
-                                    (
-                                        message.id, thread.id, message.author.id, message.author.name if message.author else "Unknown",
-                                        message.created_at, message.edited_at, None
-                                    )
+                                """
+                                INSERT INTO forum_message (
+                                    message_id, thread_location_id, author_id, author_name, created_at, edited_at,
+                                    forum_feed_message_id
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (
+                                    message.id, thread.id, message.author.id, message.author.name if message.author else "Unknown",
+                                    message.created_at, message.edited_at, None
                                 )
+                            )
 
-                # Iterate over each message in the target channel and insert it into database for ForumFeedMessage
-                async for message in tqdm_asyncio(forumfeedmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumFeedMessage"):
+            # Iterate over each message in the target channel and insert it into database for ForumFeedMessage
+            async for message in tqdm_asyncio(forumfeedmessage_target_channel.history(limit=None), desc="Processing target channel messages for ForumFeedMessage"):
+                self.cursor.execute(
+                    "SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?",
+                    (message.id,)
+                )
+                if not self.cursor.fetchone():
                     self.cursor.execute(
-                        "SELECT 1 FROM forum_feed_message WHERE forum_feed_message_id = ?",
-                        (message.id,)
+                        """
+                        INSERT INTO forum_feed_message (forum_feed_message_id, channel_id, created_at, edited_at
+                        ) VALUES (?, ?, ?, ?)
+                        """,
+                        (message.id, message.channel.id, message.created_at, message.edited_at)
                     )
-                    if not self.cursor.fetchone():
-                        self.cursor.execute(
-                            """
-                            INSERT INTO forum_feed_message (forum_feed_message_id, channel_id, created_at, edited_at
-                            ) VALUES (?, ?, ?, ?)
-                            """,
-                            (message.id, message.channel.id, message.created_at, message.edited_at)
-                        )
-                        self.cursor.execute(
-                            """
-                            UPDATE forum_message SET forum_feed_message_id = ? WHERE message_id = ?
-                            """,
-                            (message.id, message.embeds[0].footer.text.split(' ')[-1])
-                        )
+                    self.cursor.execute(
+                        """
+                        UPDATE forum_message SET forum_feed_message_id = ? WHERE message_id = ?
+                        """,
+                        (message.id, message.embeds[0].footer.text.split(' ')[-1])
+                    )
 
-                # Commit the all changes to the database
-                self.database.commit()
+            # Commit the all changes to the database
+            self.database.commit()
 
-                # Log the database initialization
-                self.logger.info("Database initialized with threads and messages from the source forum and target channel")
-            except sqlite3.Error as e:
-                self.logger.error(f"Database error | {e}")
-            except Exception as e:
-                self.logger.error(f"Exception in Database method on_ready | {e}")
-            finally:
-                self.initialization_complete = True
-
-            await self.update_database.start()
-        else:
-            self.logger.info("Database already exists, skipping initialization")
+            # Log the database initialization
+            self.logger.info("Database initialized with threads and messages from the source forum and target channel")
+        except sqlite3.Error as e:
+            self.logger.error(f"Database error | {e}")
+        except Exception as e:
+            self.logger.error(f"Exception in Database method on_ready | {e}")
+        finally:
             self.initialization_complete = True
-            await self.update_database.start()
+
+        await self.update_database.start()
 
     """
     Do a database update every 15 minutes
