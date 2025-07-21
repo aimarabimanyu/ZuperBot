@@ -24,8 +24,8 @@ class TelegramToDiscord(commands.Cog):
             os.getenv('API_ID'),
             os.getenv('API_HASH')
         )
-        self.telegram_group_id = self.bot.config['telegram_chat_mirror_settings']['group_id']
-        self.target_channel_id = self.bot.config['telegram_chat_mirror_settings']['target_channel_id']
+        self.telegram_group_ids = self.bot.config['telegram_chat_mirror_settings']['group_ids']
+        self.target_channel_ids = self.bot.config['telegram_chat_mirror_settings']['target_channel_ids']
 
     """
     Static method to split the message into parts
@@ -47,9 +47,16 @@ class TelegramToDiscord(commands.Cog):
     Telegram client to interact with the telegram group and channel
     """
     async def start_telegram_client(self):
-        # Register the handler for new messages
-        self.telegram_client.add_event_handler(self.handle_new_message, events.NewMessage(chats=self.telegram_group_id))
-        self.telegram_client.add_event_handler(self.handle_edited_message, events.MessageEdited(chats=self.telegram_group_id))
+        # Register the handler for new messages with multiple group IDs
+        for group_id in self.telegram_group_ids:
+            self.telegram_client.add_event_handler(
+                lambda event, group_id=group_id: self.handle_new_message(event, group_id),
+                events.NewMessage(chats=group_id)
+            )
+            self.telegram_client.add_event_handler(
+                lambda event, group_id=group_id: self.handle_edited_message(event, group_id),
+                events.MessageEdited(chats=group_id)
+            )
 
         await self.telegram_client.start()
         print("Telegram client started")
@@ -58,10 +65,11 @@ class TelegramToDiscord(commands.Cog):
     """
     Handle new messages from the Telegram group
     """
-    async def handle_new_message(self, event):
+    async def handle_new_message(self, event, group_id):
         message = event.message.text
         message = self.split_message(message)
-        target_channel = self.bot.get_channel(self.target_channel_id)
+        target_channel_id = self.target_channel_ids[self.telegram_group_ids.index(group_id)]
+        target_channel = self.bot.get_channel(target_channel_id)
         post_author = event.message.post_author
 
         cursor.execute(
@@ -202,15 +210,17 @@ class TelegramToDiscord(commands.Cog):
     """
     Handle edited messages from the Telegram group
     """
-    async def handle_edited_message(self, event):
+    async def handle_edited_message(self, event, group_id):
         cursor.execute(
             """
             SELECT discord_message_id FROM telegram_messages WHERE message_id = ?
             """,
             (event.message.id,)
         )
+
         discord_message_id = cursor.fetchone()
-        target_channel = self.bot.get_channel(self.target_channel_id)
+        target_channel_id = self.target_channel_ids[self.telegram_group_ids.index(group_id)]
+        target_channel = self.bot.get_channel(target_channel_id)
 
         if discord_message_id:
             discord_message_id = json.loads(discord_message_id[0].strip())
