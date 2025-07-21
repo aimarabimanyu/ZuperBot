@@ -88,6 +88,20 @@ class Database(commands.Cog, name='Database'):
                 """
             )
 
+            # Create treasury_monitoring table
+            self.cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS treasury_monitoring (
+                    tx_hash TEXT PRIMARY KEY,
+                    value TEXT,
+                    asset TEXT,
+                    from_address TEXT,
+                    to_address TEXT,
+                    timestamp TEXT
+                )
+                """
+            )
+
             # Create the telegram mirror chat table
             self.cursor.execute(
                 """

@@ -7,9 +7,12 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import threading
 from waitress import serve
+import sqlite3
 
 
 app = Flask(__name__)
+database = sqlite3.connect('data/data.db', timeout=5)
+cursor = database.cursor()
 
 
 class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
@@ -81,6 +84,11 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
     """
     async def transaction_monitoring(self) -> None:
         try:
+            cursor.execute(
+                "SELECT 1 FROM treasury_monitoring WHERE tx_hash = ?",
+                (self.alchemy_webhook_payload_data['event']['activity'][0]['hash'],)
+            )
+
             # Get the target channel to send the notification
             target_channel = self.client.get_channel(int(self.config['treasury_monitoring_settings']['target_channel_id']))
 
@@ -91,10 +99,29 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
             embed.add_field(name="Sender", value=self.censor_wallet_address(self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress']), inline=True)
             embed.add_field(name="Recipient", value=self.censor_wallet_address(self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress']), inline=True)
 
-            # Check if the transaction is outgoing or incoming
-            if self.alchemy_webhook_payload_data['event']['activity'][0]['value'] > 0:
+            # Check if the transaction is outgoing or incoming and tx_hash is not already in the database
+            if self.alchemy_webhook_payload_data['event']['activity'][0]['value'] > 0 and cursor.fetchone() is None:
                 if self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress'].lower() == self.treasury_address.lower():
                     await target_channel.send(embed=embed)
+
+                    # Insert the transaction hash into the database
+                    cursor.execute(
+                        """
+                        INSERT INTO treasury_monitoring (
+                            tx_hash, value, asset, from_address, to_address, timestamp
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['hash'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['value'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['asset'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress'],
+                            self.alchemy_webhook_payload_data['createdAt']
+                        )
+                    )
+
+                    database.commit()
 
                     self.logger.info(
                         f"Outgoing transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
@@ -102,6 +129,23 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
                     embed.description = "Incoming transaction to the treasury address"
 
                     await target_channel.send(embed=embed)
+
+                    # Insert the transaction hash into the database
+                    cursor.execute(
+                        """
+                        INSERT INTO treasury_monitoring (
+                            tx_hash, value, asset, from_address, to_address, timestamp
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['hash'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['value'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['asset'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['fromAddress'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress'],
+                            self.alchemy_webhook_payload_data['event']['activity'][0]['blockTimestamp']
+                        )
+                    )
 
                     self.logger.info(
                         f"Incoming transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
