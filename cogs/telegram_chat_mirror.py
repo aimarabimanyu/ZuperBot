@@ -3,6 +3,7 @@ import json
 import os
 from datetime import timedelta
 from telethon import TelegramClient, events
+from telethon.tl.types import InputPeerChannel
 import discord
 from discord.ext import commands
 import sqlite3
@@ -15,38 +16,56 @@ cursor = database.cursor()
 class TelegramToDiscord(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.telegram_client_session_directory = (
-            f"{os.path.dirname(os.path.realpath(os.path.dirname(__file__)))}"
-            f"/data/{self.bot.config['telegram_chat_mirror_settings']['session_name']}"
-        )
+        self.logger = self.bot.logger
+        self.session_dir = f"{os.path.dirname(os.path.realpath(os.path.dirname(__file__)))}"\
+                           f"/data/{self.bot.config['telegram_chat_mirror_settings']['session_name']}"
         self.telegram_client = TelegramClient(
-            self.telegram_client_session_directory,
+            self.session_dir,
             os.getenv('API_ID'),
             os.getenv('API_HASH')
         )
         self.telegram_group_ids = self.bot.config['telegram_chat_mirror_settings']['group_ids']
+        self.telegram_group_topics = []
         self.target_channel_ids = self.bot.config['telegram_chat_mirror_settings']['target_channel_ids']
+
+    """
+    Resolve group IDs to InputPeerChannel objects
+    """
+    def resolve_group_ids(self):
+        for i, group in enumerate(self.telegram_group_ids):
+            if "_" in str(group):
+                group_id, access_hash = group.split("_")
+
+                self.telegram_group_ids[i] = InputPeerChannel(
+                    channel_id=int(group_id),
+                    access_hash=int(access_hash)
+                )
+
+                self.telegram_group_topics.append(access_hash)
+            else:
+                self.telegram_group_topics.append(None)
 
     """
     Static method to split the message into parts
     """
     @staticmethod
-    def split_message(text):
-        limit = 1900
-        part = []
+    def split_message(text, limit=1900):
+        parts = []
         while len(text) > limit:
             index = text.rfind(" ", 0, limit)
             if index == -1:
                 index = limit
-            part.append(text[:index])
+            parts.append(text[:index])
             text = text[index:].strip()
-        part.append(text)
-        return part
+        parts.append(text)
+        return parts
 
     """
     Telegram client to interact with the telegram group and channel
     """
     async def start_telegram_client(self):
+        self.resolve_group_ids()
+
         # Register the handler for new messages with multiple group IDs
         for group_id in self.telegram_group_ids:
             self.telegram_client.add_event_handler(
@@ -66,11 +85,16 @@ class TelegramToDiscord(commands.Cog):
     Handle new messages from the Telegram group
     """
     async def handle_new_message(self, event, group_id):
-        message = event.message.text
-        message = self.split_message(message)
-        target_channel_id = self.target_channel_ids[self.telegram_group_ids.index(group_id)]
-        target_channel = self.bot.get_channel(target_channel_id)
-        post_author = event.message.post_author
+        if isinstance(group_id, InputPeerChannel) and event.message.reply_to.forum_topic is True:
+            if not (
+                event.message.reply_to.reply_to_msg_id == int(self.telegram_group_topics[self.telegram_group_ids.index(group_id)])
+                or event.message.reply_to.reply_to_top_id == int(self.telegram_group_topics[self.telegram_group_ids.index(group_id)])
+            ):
+                return
+
+        message = self.split_message(event.message.text)
+        target_channel = self.bot.get_channel(self.target_channel_ids[self.telegram_group_ids.index(group_id)])
+        post_author = event.message.post_author or "Unknown Author"
 
         cursor.execute(
             """

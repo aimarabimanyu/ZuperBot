@@ -40,7 +40,7 @@
   },
   "telegram_chat_mirror_settings": {
     "session_name": "session_tele",
-    "group_ids": [2462406749, 2597843555],
-    "target_channel_ids": [1231267273600401506, 1231267273600401507]
+    "group_ids": [2462406749, 2597843555, "2751071263_2"],
+    "target_channel_ids": [1231267273600401506, 1231267273600401507, 1231267273600401508]
   }
 }
