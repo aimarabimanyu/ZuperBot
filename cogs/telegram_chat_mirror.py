@@ -66,7 +66,6 @@ class TelegramToDiscord(commands.Cog):
     async def start_telegram_client(self):
         self.resolve_group_ids()
 
-        # Register the handler for new messages with multiple group IDs
         for group_id in self.telegram_group_ids:
             self.telegram_client.add_event_handler(
                 lambda event, group_id=group_id: self.handle_new_message(event, group_id),
@@ -103,133 +102,96 @@ class TelegramToDiscord(commands.Cog):
             (event.message.id, (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'))
         )
 
+        database.commit()
+
         file_temp = await self.telegram_client.download_media(event.message.media)
 
-        # Check if the file is None, which means no media was sent
-        if file_temp is None:
-            discord_message_id = []
-
-            # Check if the message is not replying to another message
-            if event.message.reply_to is None:
-                for part in message:
-                    if part == message[0]:
-                        discord_message = await target_channel.send("```{} | {}``` \n {}".format(
-                            post_author if post_author else "Unknown Author",
-                            (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
-                            part
-                        ))
-                    else:
-                        discord_message = await target_channel.send(part)
-                    discord_message_id.append(discord_message.id)
-
-            # Check if the message is replying to another message
-            elif event.message.reply_to is not None:
-                cursor.execute(
-                    """
-                    SELECT discord_message_id FROM telegram_messages WHERE message_id = ?
-                    """,
-                    (event.message.reply_to.reply_to_msg_id,)
-                )
-
-                replied_message_id = cursor.fetchone()
-                replied_message = await target_channel.fetch_message(int(json.loads(replied_message_id[0].strip())[-1])) if replied_message_id else None
-
-                for part in message:
-                    if part == message[0]:
-                        discord_message = await target_channel.send("```{} | {}``` \n {}".format(
-                            post_author if post_author else "Unknown Author",
-                            (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
-                            part
-                        ), reference=replied_message)
-                    else:
-                        discord_message = await target_channel.send(part)
-                    discord_message_id.append(discord_message.id)
-
-            cursor.execute(
-                """
-                UPDATE telegram_messages SET discord_message_id = ? WHERE message_id = ?
-                """,
-                (json.dumps(discord_message_id), event.message.id)
+        if file_temp:
+            discord_message_ids = await self._send_media_message(
+                target_channel, message, post_author, event.message.date, file_temp, event.message.reply_to
+            )
+        else:
+            discord_message_ids = await self._send_text_message(
+                target_channel, message, post_author, event.message.date, event.message.reply_to
             )
 
-        # Check if the file is not None, which means media was sent
-        elif file_temp:
-            discord_message_id = []
-
-            # If the message is not replying to another message
-            if event.message.reply_to is None:
-                if message:
-                    for part in message:
-                        if part == message[0] and len(message) > 1:
-                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
-                                post_author if post_author else "Unknown Author",
-                                (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
-                                part
-                            ))
-                        elif part == message[-1] and len(message) > 1:
-                            discord_message = await target_channel.send(part, file=discord.File(file_temp))
-                            os.remove(file_temp)
-                        elif len(message) == 1:
-                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
-                                post_author if post_author else "Unknown Author",
-                                (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
-                                part
-                            ), file=discord.File(file_temp))
-                            os.remove(file_temp)
-                        else:
-                            discord_message = await target_channel.send(part)
-                        discord_message_id.append(discord_message.id)
-                else:
-                    discord_message = await target_channel.send(file=discord.File(file_temp))
-                    discord_message_id.append(discord_message.id)
-                    os.remove(file_temp)
-
-            # If the message is replying to another message
-            elif event.message.reply_to is not None:
-                cursor.execute(
-                    """
-                    SELECT discord_message_id FROM telegram_messages WHERE message_id = ?
-                    """,
-                    (event.message.reply_to.reply_to_msg_id,)
-                )
-
-                replied_message_id = cursor.fetchone()
-                replied_message = await target_channel.fetch_message(int(json.loads(replied_message_id[0].strip())[-1])) if replied_message_id else None
-
-                if message:
-                    for part in message:
-                        if part == message[0] and len(message) > 1:
-                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
-                                post_author if post_author else "Unknown Author",
-                                (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
-                                part
-                            ), reference=replied_message)
-                        elif part == message[-1] and len(message) > 1:
-                            discord_message = await target_channel.send(part, file=discord.File(file_temp), reference=replied_message)
-                            os.remove(file_temp)
-                        elif len(message) == 1:
-                            discord_message = await target_channel.send("```{} | {}``` \n {}".format(
-                                post_author if post_author else "Unknown Author",
-                                (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:S'),
-                                part
-                            ), file=discord.File(file_temp), reference=replied_message)
-                            os.remove(file_temp)
-                        else:
-                            discord_message = await target_channel.send(part)
-                        discord_message_id.append(discord_message.id)
-                else:
-                    discord_message = await target_channel.send(file=discord.File(file_temp))
-                    discord_message_id.append(discord_message.id)
-                    os.remove(file_temp)
-
-            cursor.execute(
-                """
-                UPDATE telegram_messages SET discord_message_id = ? WHERE message_id = ?
-                """,
-                (json.dumps(discord_message_id), event.message.id)
-            )
+        cursor.execute(
+            """
+            UPDATE telegram_messages SET discord_message_id = ? WHERE message_id = ?
+            """,
+            (json.dumps(discord_message_ids), event.message.id)
+        )
 
         database.commit()
+
+    """
+    Helper method for sending telegram messages to discord
+    """
+    async def _send_text_message(self, channel, message, author, date, reply_to):
+        discord_message_ids = []
+        replied_message = await self._fetch_replied_message(channel, reply_to)
+
+        for part in message:
+            if part == message[0]:
+                discord_message = await channel.send("```{} | {}``` \n {}".format(
+                    author if author else "Unknown Author",
+                    date.strftime('%Y-%m-%d %H:%M:%S'),
+                    part
+                ), reference=replied_message)
+            else:
+                discord_message = await channel.send(part)
+            discord_message_ids.append(discord_message.id)
+
+        return discord_message_ids
+
+    """
+    Helper method for sending telegram messages with media to discord
+    """
+    async def _send_media_message(self, channel, message, author, date, file_temp, reply_to):
+        discord_message_ids = []
+        replied_message = await self._fetch_replied_message(channel, reply_to)
+
+        for part in message:
+            if part == message[0] and len(message) > 1:
+                discord_message = await channel.send("```{} | {}``` \n {}".format(
+                    author if author else "Unknown Author",
+                    date.strftime('%Y-%m-%d %H:%M:%S'),
+                    part
+                ), file=discord.File(file_temp), reference=replied_message)
+            elif part == message[-1] and len(message) > 1:
+                discord_message = await channel.send(part, file=discord.File(file_temp), reference=replied_message)
+                os.remove(file_temp)
+            elif len(message) == 1:
+                discord_message = await channel.send("```{} | {}``` \n {}".format(
+                    author if author else "Unknown Author",
+                    date.strftime('%Y-%m-%d %H:%M:%S'),
+                    part
+                ), file=discord.File(file_temp), reference=replied_message)
+                os.remove(file_temp)
+            else:
+                discord_message = await channel.send(part)
+            discord_message_ids.append(discord_message.id)
+
+        return discord_message_ids
+
+    """
+    Helper method for fetch replied message from discord
+    """
+    @staticmethod
+    async def _fetch_replied_message(channel, reply_to):
+        if reply_to:
+            cursor.execute(
+                """
+                SELECT discord_message_id FROM telegram_messages WHERE message_id = ?
+                """,
+                (reply_to.reply_to_msg_id,)
+            )
+
+            replied_message_id = cursor.fetchone()
+            if replied_message_id:
+                return await channel.fetch_message(int(json.loads(replied_message_id[0].strip())[-1]))
+
+        return None
 
     """
     Handle edited messages from the Telegram group
@@ -242,17 +204,16 @@ class TelegramToDiscord(commands.Cog):
             (event.message.id,)
         )
 
-        discord_message_id = cursor.fetchone()
-        target_channel_id = self.target_channel_ids[self.telegram_group_ids.index(group_id)]
-        target_channel = self.bot.get_channel(target_channel_id)
+        discord_message_ids = cursor.fetchone()
 
-        if discord_message_id:
-            discord_message_id = json.loads(discord_message_id[0].strip())
-
+        if discord_message_ids:
+            discord_message_ids = json.loads(discord_message_ids[0].strip())
+            target_channel = self.bot.get_channel(self.target_channel_ids[self.telegram_group_ids.index(group_id)])
             edited_message_parts = self.split_message(event.message.text)
 
-            for i, message_id in enumerate(discord_message_id):
+            for i, message_id in enumerate(discord_message_ids):
                 discord_message = await target_channel.fetch_message(int(message_id))
+
                 if i < len(edited_message_parts):
                     if i == 0:
                         await discord_message.edit(content="```{} | {}``` \n {}".format(
@@ -263,8 +224,7 @@ class TelegramToDiscord(commands.Cog):
                     else:
                         await discord_message.edit(content=edited_message_parts[i])
                 else:
-                    if discord_message.attachments is None:
-                        await discord_message.edit(content=".")
+                    await discord_message.edit(content=".")
 
     @commands.Cog.listener()
     async def on_ready(self):
