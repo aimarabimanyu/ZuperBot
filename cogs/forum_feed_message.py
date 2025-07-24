@@ -19,6 +19,8 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
     """
     @commands.Cog.listener()
     async def on_message(self, message) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         try:
             cursor.execute(
                 "SELECT 1 FROM forum_message WHERE message_id = ?",
@@ -84,6 +86,8 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
     """
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         try:
             # Check if the message is from source forum channel and trigger role is mentioned
             if (
@@ -301,6 +305,8 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
     """
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         try:
             # Check if the forum feed message is in the database based on message_id
             result = cursor.execute(

@@ -3,6 +3,7 @@ import sqlite3
 from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
 import os
+import asyncio
 
 
 # Create a new class called Database
@@ -11,7 +12,7 @@ class Database(commands.Cog, name='Database'):
         self.client = client
         self.config = self.client.config
         self.logger = self.client.logger
-        self.initialization_complete = False
+        self.initialization_event = asyncio.Event()
 
         # Initialize the database
         try:
@@ -283,7 +284,7 @@ class Database(commands.Cog, name='Database'):
         except Exception as e:
             self.logger.error(f"Exception in Database method on_ready | {e}")
         finally:
-            self.initialization_complete = True
+            self.initialization_event.set()
 
         await self.update_database.start()
 
@@ -292,9 +293,7 @@ class Database(commands.Cog, name='Database'):
     """
     @tasks.loop(minutes=15)
     async def update_database(self) -> None:
-        if not self.initialization_complete:
-            self.logger.warning("update_database called before initialization is complete")
-            return
+        await self.initialization_event.wait()
 
         if self.config["bot_feature"]["forum_new_thread_message"]:
             await self._update_forum_thread()

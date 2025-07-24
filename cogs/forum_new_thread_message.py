@@ -19,6 +19,8 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_thread_create(self, thread) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         cursor.execute(
             "SELECT forum_new_thread_message_id FROM forum_thread WHERE thread_id = ?",
             (thread.id,)
@@ -100,6 +102,8 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_raw_thread_update(self, payload) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         cursor.execute(
             "SELECT forum_new_thread_message_id FROM forum_thread WHERE thread_id = ?",
             (payload.thread_id,)
@@ -158,6 +162,8 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         cursor.execute(
             "SELECT forum_new_thread_message_id FROM forum_thread WHERE thread_id = ?",
             (payload.message_id,)
@@ -208,6 +214,8 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_raw_thread_delete(self, payload) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         cursor.execute(
             "SELECT 1 FROM forum_thread WHERE thread_id = ?",
             (payload.thread_id,)

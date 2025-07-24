@@ -13,6 +13,8 @@ class WelcomeMessage(commands.Cog, name='Welcome Message'):
     '''
     @commands.Cog.listener()
     async def on_member_join(self, member) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         welcome_channel = self.client.get_channel(int(self.config['welcome_message_settings']['welcome_channel_id']))
         welcome_message = f"{self.config['welcome_message_settings']['welcome_message']}"
         embed = discord.Embed().set_image(url=self.config['welcome_message_settings']['welcome_image_url'])

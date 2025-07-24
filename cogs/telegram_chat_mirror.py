@@ -84,6 +84,8 @@ class TelegramToDiscord(commands.Cog):
     Handle new messages from the Telegram group
     """
     async def handle_new_message(self, event, group_id):
+        await self.bot.get_cog('Database').initialization_event.wait()
+
         if isinstance(group_id, InputPeerChannel):
             if event.message.reply_to is None:
                 return
@@ -199,6 +201,8 @@ class TelegramToDiscord(commands.Cog):
     Handle edited messages from the Telegram group
     """
     async def handle_edited_message(self, event, group_id):
+        await self.bot.get_cog('Database').initialization_event.wait()
+
         cursor.execute(
             """
             SELECT discord_message_id FROM telegram_messages WHERE message_id = ?

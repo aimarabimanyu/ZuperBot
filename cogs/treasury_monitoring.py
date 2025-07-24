@@ -46,6 +46,8 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
     """
     @tasks.loop(seconds=30)
     async def treasury_balance_presence(self) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         try:
             # Get the treasury balance
             checksum_treasury_address = self.w3.to_checksum_address(self.treasury_address)
@@ -83,6 +85,8 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
     Send the notification to the target channel if the transaction is detected
     """
     async def transaction_monitoring(self) -> None:
+        await self.client.get_cog('Database').initialization_event.wait()
+
         try:
             cursor.execute(
                 "SELECT 1 FROM treasury_monitoring WHERE tx_hash = ?",
