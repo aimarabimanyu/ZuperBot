@@ -84,8 +84,10 @@ class TelegramToDiscord(commands.Cog):
     Handle new messages from the Telegram group
     """
     async def handle_new_message(self, event, group_id):
-        if isinstance(group_id, InputPeerChannel) and event.message.reply_to.forum_topic is True:
-            if not (
+        if isinstance(group_id, InputPeerChannel):
+            if event.message.reply_to is None:
+                return
+            elif not (
                 event.message.reply_to.reply_to_msg_id == int(self.telegram_group_topics[self.telegram_group_ids.index(group_id)])
                 or event.message.reply_to.reply_to_top_id == int(self.telegram_group_topics[self.telegram_group_ids.index(group_id)])
             ):
