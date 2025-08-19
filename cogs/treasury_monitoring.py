@@ -46,7 +46,7 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
     """
     @tasks.loop(seconds=30)
     async def treasury_balance_presence(self) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         try:
             # Get the treasury balance
@@ -85,7 +85,7 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
     Send the notification to the target channel if the transaction is detected
     """
     async def transaction_monitoring(self) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         try:
             cursor.execute(
@@ -125,7 +125,9 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
                         )
                     )
 
-                    database.commit()
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     self.logger.info(
                         f"Outgoing transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")

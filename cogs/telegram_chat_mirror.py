@@ -84,7 +84,7 @@ class TelegramToDiscord(commands.Cog):
     Handle new messages from the Telegram group
     """
     async def handle_new_message(self, event, group_id):
-        await self.bot.get_cog('Database').initialization_event.wait()
+        await self.bot.get_cog('Database').db_initialization_event.wait()
 
         if isinstance(group_id, InputPeerChannel):
             if event.message.reply_to is None:
@@ -106,7 +106,9 @@ class TelegramToDiscord(commands.Cog):
             (event.message.id, (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'))
         )
 
-        database.commit()
+        # Commit the all changes to the database
+        async with self.bot.get_cog('Database').db_lock:
+            database.commit()
 
         file_temp = await self.telegram_client.download_media(event.message.media)
 
@@ -126,7 +128,9 @@ class TelegramToDiscord(commands.Cog):
             (json.dumps(discord_message_ids), event.message.id)
         )
 
-        database.commit()
+        # Commit the all changes to the database
+        async with self.bot.get_cog('Database').db_lock:
+            database.commit()
 
     """
     Helper method for sending telegram messages to discord
@@ -137,7 +141,7 @@ class TelegramToDiscord(commands.Cog):
 
         for part in message:
             if part == message[0]:
-                discord_message = await channel.send("```{} | {}``` \n {}".format(
+                discord_message = await channel.send("```{} | {}``` \n{}".format(
                     author if author else "Unknown Author",
                     date.strftime('%Y-%m-%d %H:%M:%S'),
                     part
@@ -157,16 +161,16 @@ class TelegramToDiscord(commands.Cog):
 
         for part in message:
             if part == message[0] and len(message) > 1:
-                discord_message = await channel.send("```{} | {}``` \n {}".format(
+                discord_message = await channel.send("```{} | {}``` \n{}".format(
                     author if author else "Unknown Author",
                     date.strftime('%Y-%m-%d %H:%M:%S'),
                     part
-                ), file=discord.File(file_temp), reference=replied_message)
+                ), reference=replied_message)
             elif part == message[-1] and len(message) > 1:
                 discord_message = await channel.send(part, file=discord.File(file_temp), reference=replied_message)
                 os.remove(file_temp)
             elif len(message) == 1:
-                discord_message = await channel.send("```{} | {}``` \n {}".format(
+                discord_message = await channel.send("```{} | {}``` \n{}".format(
                     author if author else "Unknown Author",
                     date.strftime('%Y-%m-%d %H:%M:%S'),
                     part
@@ -201,7 +205,7 @@ class TelegramToDiscord(commands.Cog):
     Handle edited messages from the Telegram group
     """
     async def handle_edited_message(self, event, group_id):
-        await self.bot.get_cog('Database').initialization_event.wait()
+        await self.bot.get_cog('Database').db_initialization_event.wait()
 
         cursor.execute(
             """
@@ -222,7 +226,7 @@ class TelegramToDiscord(commands.Cog):
 
                 if i < len(edited_message_parts):
                     if i == 0:
-                        await discord_message.edit(content="```{} | {}``` \n {}".format(
+                        await discord_message.edit(content="```{} | {}``` \n{}".format(
                             event.message.post_author if event.message.post_author else "Unknown Author",
                             (event.message.date + timedelta(hours=7)).strftime('%Y-%m-%d %H:%M:%S'),
                             edited_message_parts[i]

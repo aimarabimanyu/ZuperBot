@@ -19,7 +19,7 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_thread_create(self, thread) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         cursor.execute(
             "SELECT forum_new_thread_message_id FROM forum_thread WHERE thread_id = ?",
@@ -90,7 +90,10 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
                             new_thread_message.edited_at
                         )
                     )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the new thread message
                 self.logger.info(f"New thread detected | Thread ID: {thread.id} | New thread message sent")
@@ -102,7 +105,7 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_raw_thread_update(self, payload) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         cursor.execute(
             "SELECT forum_new_thread_message_id FROM forum_thread WHERE thread_id = ?",
@@ -150,7 +153,10 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
                         new_thread_message.edited_at, forum_new_thread_message_id[0]
                     )
                 )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the edited thread message
                 self.logger.info(f"Thread updated | Thread ID: {payload.thread_id} | New thread message updated")
@@ -162,7 +168,7 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         cursor.execute(
             "SELECT forum_new_thread_message_id FROM forum_thread WHERE thread_id = ?",
@@ -202,7 +208,10 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
                         new_thread_message.edited_at, new_thread_message_id[0]
                     )
                 )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the edited thread starter message
                 self.logger.info(f"Thread starter message updated | Thread ID: {payload.message_id} | New thread message updated")
@@ -214,7 +223,7 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
     """
     @commands.Cog.listener()
     async def on_raw_thread_delete(self, payload) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         cursor.execute(
             "SELECT 1 FROM forum_thread WHERE thread_id = ?",
@@ -245,7 +254,10 @@ class ForumNewThreadMessage(commands.Cog, name='Forum New Thread Message'):
                     "DELETE FROM forum_new_thread_message WHERE forum_new_thread_message_id = ?",
                     (forum_new_thread_message_id[0],)
                 )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the deleted thread message
                 self.logger.info(f"Thread deleted | Thread ID: {payload.thread_id} | New thread message deleted")

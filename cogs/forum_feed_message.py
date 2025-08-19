@@ -19,7 +19,7 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
     """
     @commands.Cog.listener()
     async def on_message(self, message) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         try:
             cursor.execute(
@@ -74,7 +74,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                         new_feed_message.edited_at
                     )
                 )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the forum feed message sent
                 self.logger.info(f"Trigger role detected | Message ID: {message.id} | Forum feed message sent")
@@ -86,7 +89,7 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
     """
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         try:
             # Check if the message is from source forum channel and trigger role is mentioned
@@ -148,7 +151,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                             old_feed_message.id
                         )
                     )
-                    database.commit()
+
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     # Log the updated forum feed message
                     self.logger.info(f"Edited message > 3 days | Message ID: {forum_message.id} | Forum feed message updated")
@@ -188,7 +194,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                             new_feed_message.edited_at, new_feed_message.id
                         )
                     )
-                    database.commit()
+
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     # Log the updated forum feed message
                     self.logger.info(f"Edited message < 3 days | Message ID: {forum_message.id} | Forum feed message updated")
@@ -246,7 +255,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                             new_feed_message.created_at, new_feed_message.edited_at
                         )
                     )
-                    database.commit()
+
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     # Log the updated forum feed message
                     self.logger.info(f"Edited message with added trigger role | Message ID: {payload.message_id} | Forum feed message updated")
@@ -282,7 +294,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                         "DELETE FROM forum_feed_message WHERE forum_feed_message_id = ?",
                         (old_feed_message.id,)
                     )
-                    database.commit()
+
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     # Log the updated forum feed message
                     self.logger.info(f"Edited message removed trigger role | Message ID: {payload.message_id} | Forum feed message deleted")
@@ -293,7 +308,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                         "DELETE FROM forum_message WHERE message_id = ?",
                         (payload.message_id,)
                     )
-                    database.commit()
+
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     # Log the updated forum feed message
                     self.logger.info(f"Edited message removed trigger role | Message ID: {payload.message_id} | Forum message data deleted")
@@ -305,7 +323,7 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
     """
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload) -> None:
-        await self.client.get_cog('Database').initialization_event.wait()
+        await self.client.get_cog('Database').db_initialization_event.wait()
 
         try:
             # Check if the forum feed message is in the database based on message_id
@@ -335,7 +353,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                     "DELETE FROM forum_feed_message WHERE forum_feed_message_id = ?",
                     (old_feed_message.id,)
                 )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the deleted forum feed message
                 self.logger.info(f"Deleted message | Message ID: {payload.message_id} | Forum feed message deleted")
@@ -345,7 +366,10 @@ class ForumFeedMessage(commands.Cog, name='Forum Feed Message'):
                     "DELETE FROM forum_message WHERE message_id = ?",
                     (payload.message_id,)
                 )
-                database.commit()
+
+                # Commit the all changes to the database
+                async with self.client.get_cog('Database').db_lock:
+                    database.commit()
 
                 # Log the deleted forum feed message
                 self.logger.info(f"Deleted message | Message ID: {payload.message_id} | Forum message data deleted")
