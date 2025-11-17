@@ -131,6 +131,7 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
 
                     self.logger.info(
                         f"Outgoing transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
+
                 if self.alchemy_webhook_payload_data['event']['activity'][0]['toAddress'].lower() == self.treasury_address.lower():
                     embed.description = "Incoming transaction to the treasury address"
 
@@ -152,6 +153,10 @@ class TreasuryMonitoring(commands.Cog, name='Treasury Monitoring'):
                             self.alchemy_webhook_payload_data['event']['activity'][0]['blockTimestamp']
                         )
                     )
+
+                    # Commit the all changes to the database
+                    async with self.client.get_cog('Database').db_lock:
+                        database.commit()
 
                     self.logger.info(
                         f"Incoming transaction detected | Tx: {self.alchemy_webhook_payload_data['event']['activity'][0]['hash']}")
